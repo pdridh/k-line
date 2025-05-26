@@ -2,9 +2,9 @@ package db
 
 import (
 	"log"
-	"os"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pdridh/k-line/config"
 )
 
 var core *sqlx.DB
@@ -17,7 +17,7 @@ func Connect() (*sqlx.DB, error) {
 	}
 
 	driver := "postgres"
-	uri := os.Getenv("DB_URI")
+	uri := config.Server().DatabaseURI
 
 	d, err := sqlx.Connect(driver, uri)
 	if err != nil {
