@@ -1,6 +1,7 @@
 package db
 
 import (
+	"log"
 	"os"
 
 	"github.com/jmoiron/sqlx"
@@ -34,4 +35,13 @@ func DB() (*sqlx.DB, error) {
 	}
 
 	return core, nil
+}
+
+func Disconnect() error {
+	if core == nil {
+		return nil
+	}
+
+	log.Println("Closing database connection")
+	return core.Close()
 }
