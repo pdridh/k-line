@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/db"
+	"github.com/pdridh/k-line/server"
 )
 
 func main() {
@@ -13,7 +14,11 @@ func main() {
 	_, err := db.Connect()
 	if err != nil {
 		log.Println("failed to connect to db: ", err)
-		db.Disconnect()
 		return
+	}
+
+	s := server.New()
+	if err := s.Start(); err != nil {
+		log.Fatalln("Failed to start the server: ", err)
 	}
 }
