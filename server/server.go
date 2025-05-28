@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pdridh/k-line/config"
+	"github.com/pdridh/k-line/menu"
 )
 
 const (
@@ -18,8 +20,13 @@ type server struct {
 	HttpServer *http.Server
 }
 
-func New() *server {
+func New(db *sqlx.DB) *server {
 	mux := http.NewServeMux()
+
+	menuStore := menu.NewPSQLStore(db)
+	menuHandler := menu.NewHandler(menuStore)
+
+	mux.Handle("POST /menu/items", menuHandler.HandlePostMenuItem())
 
 	mux.Handle("/", http.NotFoundHandler())
 
@@ -34,11 +41,11 @@ func New() *server {
 }
 
 func (s *server) Start() error {
+	log.Println("Listening on: ", s.HttpServer.Addr)
+
 	if err := s.HttpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
-
-	log.Println("Listening on: ", s.HttpServer.Addr)
 
 	return nil
 }

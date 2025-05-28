@@ -11,13 +11,13 @@ import (
 
 func main() {
 	config.Load()
-	_, err := db.Connect()
+	d, err := db.Connect()
 	if err != nil {
 		log.Println("failed to connect to db: ", err)
 		return
 	}
 
-	s := server.New()
+	s := server.New(d)
 	if err := s.Start(); err != nil {
 		log.Fatalln("Failed to start the server: ", err)
 	}

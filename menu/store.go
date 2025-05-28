@@ -10,17 +10,18 @@ type Store interface {
 	CreateItem(ctx context.Context, name string, description string, price float64) (*MenuItem, error)
 }
 
-func New(db *sqlx.DB) *sqlxStore {
+func NewPSQLStore(db *sqlx.DB) *sqlxStore {
 	return &sqlxStore{
 		db: db,
 	}
-
 }
 
 type sqlxStore struct {
 	db *sqlx.DB
 }
 
+// Insert a menu item using the given name, description and price and returns the MenuItem filled with all the fields
+// in the table.
 func (s *sqlxStore) CreateItem(ctx context.Context, name string, description string, price float64) (*MenuItem, error) {
 	const query = `INSERT INTO menu_items (name, description, price) VALUES(:name, :description, :price)	RETURNING *`
 
