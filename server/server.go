@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/menu"
@@ -20,14 +21,13 @@ type server struct {
 	HttpServer *http.Server
 }
 
-func New(db *sqlx.DB) *server {
+func New(v *validator.Validate, d *sqlx.DB) *server {
 	mux := http.NewServeMux()
 
-	menuStore := menu.NewPSQLStore(db)
-	menuHandler := menu.NewHandler(menuStore)
+	menuStore := menu.NewPSQLStore(d)
+	menuHandler := menu.NewHandler(v, menuStore)
 
 	mux.Handle("POST /menu/items", menuHandler.HandlePostMenuItem())
-
 	mux.Handle("/", http.NotFoundHandler())
 
 	h := &http.Server{

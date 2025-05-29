@@ -37,11 +37,7 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, v any) error 
 // Utility function that turns the given status, message and errors into an object ErrorResponse
 // Which is used as a json response.
 func WriteError(w http.ResponseWriter, r *http.Request, status int, message string, errors any) {
-	e := ErrorResponse{
-		Status:  status,
-		Message: message,
-		Errors:  errors,
-	}
+	e := NewErrorResponse(status, message, errors)
 
 	if err := WriteJSON(w, r, status, e); err != nil {
 		log.Println("failed to write to request")

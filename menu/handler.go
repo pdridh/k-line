@@ -3,24 +3,27 @@ package menu
 import (
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/k-line/api"
 )
 
 type handler struct {
-	Store Store
+	Store    Store
+	Validate *validator.Validate
 }
 
-func NewHandler(s Store) *handler {
+func NewHandler(v *validator.Validate, s Store) *handler {
 	return &handler{
-		Store: s,
+		Validate: v,
+		Store:    s,
 	}
 }
 
 func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 	type RequestPayload struct {
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Price       float64 `json:"price"`
+		Name        string  `json:"name" validate:"required"`
+		Description string  `json:"description" validate:"required"`
+		Price       float64 `json:"price" validate:"required"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +34,11 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 			return
 		}
 
-		// TODO validate
+		if err := h.Validate.Struct(payload); err != nil {
+			v := api.FormatValidationErrors(err)
+			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			return
+		}
 
 		i, err := h.Store.CreateItem(r.Context(), payload.Name, payload.Description, payload.Price)
 		if err != nil {
