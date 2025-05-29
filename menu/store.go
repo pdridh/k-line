@@ -8,6 +8,7 @@ import (
 
 type Store interface {
 	CreateItem(ctx context.Context, name string, description string, price float64) (*MenuItem, error)
+	GetAllItems(ctx context.Context) ([]MenuItem, error)
 }
 
 func NewPSQLStore(db *sqlx.DB) *sqlxStore {
@@ -43,4 +44,18 @@ func (s *sqlxStore) CreateItem(ctx context.Context, name string, description str
 	}
 
 	return &i, nil
+}
+
+func (s *sqlxStore) GetAllItems(ctx context.Context) ([]MenuItem, error) {
+	const query = `
+	SELECT * FROM menu_items
+	`
+	// TODO add filtering and pagination probably
+	var items []MenuItem
+
+	if err := s.db.SelectContext(ctx, &items, query); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

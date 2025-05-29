@@ -1,6 +1,7 @@
 package menu
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -49,4 +50,18 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 		api.WriteJSON(w, r, http.StatusCreated, i)
 	}
 
+}
+
+func (h *handler) HandleGetAll() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		i, err := h.Store.GetAllItems(r.Context())
+		if err != nil {
+			log.Println(err)
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, i)
+	}
 }
