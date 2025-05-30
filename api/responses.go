@@ -44,6 +44,8 @@ func WriteError(w http.ResponseWriter, r *http.Request, status int, message stri
 	}
 }
 
+// TODO make these generalized? tala ko
+
 // Helper that calls WriteError() with args for an internal server error
 func WriteInternalError(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, r, http.StatusInternalServerError, "Internal server error :(", nil)
@@ -52,4 +54,9 @@ func WriteInternalError(w http.ResponseWriter, r *http.Request) {
 // Helper that calls WriteError() with args for a bad request error
 func WriteBadRequestError(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, r, http.StatusBadRequest, "Bad request", nil)
+}
+
+// Helper that calls WriteError() with args for a resource not found error
+func WriteNotFoundError(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, http.StatusNotFound, "Resource Not Found", nil)
 }

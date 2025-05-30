@@ -3,6 +3,7 @@ package menu
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/k-line/api"
@@ -59,6 +60,32 @@ func (h *handler) HandleGetAll() http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			api.WriteInternalError(w, r)
+			return
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, i)
+	}
+}
+
+func (h *handler) HandleGetOne() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			api.WriteNotFoundError(w, r)
+			return
+		}
+
+		i, err := h.Store.GetItemById(r.Context(), id)
+		if err != nil {
+			log.Println(err)
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		if i == nil {
+			api.WriteNotFoundError(w, r)
 			return
 		}
 

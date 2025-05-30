@@ -27,8 +27,9 @@ func New(v *validator.Validate, d *sqlx.DB) *server {
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)
 
-	mux.Handle("GET /menu/items", menuHandler.HandleGetAll())
-	mux.Handle("POST /menu/items", menuHandler.HandlePostMenuItem())
+	mux.Handle("GET /menu/item", menuHandler.HandleGetAll())
+	mux.Handle("GET /menu/item/{id}", menuHandler.HandleGetOne())
+	mux.Handle("POST /menu/item", menuHandler.HandlePostMenuItem())
 	mux.Handle("/", http.NotFoundHandler())
 
 	h := &http.Server{
