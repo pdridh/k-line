@@ -33,12 +33,12 @@ func New(v *validator.Validate, d *sqlx.DB) *server {
 
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)
-	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register(), user.UserAdmin))
+	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register()))
 	mux.Handle("POST /auth/login", authHandler.Login())
 
-	mux.Handle("GET /menu", menuHandler.GetAllItems())
-	mux.Handle("GET /menu/{id}", menuHandler.GetItemById())
-	mux.Handle("POST /menu", menuHandler.CreateItem())
+	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), user.UserWaiter, user.UserKitchen))
+	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), user.UserWaiter, user.UserKitchen))
+	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
 	mux.Handle("/", http.NotFoundHandler())
 
 	h := &http.Server{

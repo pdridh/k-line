@@ -35,8 +35,7 @@ func Middleware(next http.HandlerFunc, allowedTypes ...user.UserType) http.Handl
 		}
 
 		newCtx := context.WithValue(r.Context(), api.ContextUserKey, api.CurrentUser{ID: c.UserID, Type: c.UserType})
-
-		if len(allowedTypes) == 0 || slices.Contains(allowedTypes, c.UserType) {
+		if c.UserType == user.UserAdmin || slices.Contains(allowedTypes, c.UserType) {
 			next(w, r.WithContext(newCtx))
 			return
 		}
