@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/k-line/api"
@@ -28,6 +29,14 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 		Price       float64 `json:"price" validate:"required"`
 	}
 
+	type ResponsePayload struct {
+		ID          int       `json:"id"`
+		Name        string    `json:"name"`
+		Description string    `json:"description"`
+		Price       float64   `json:"price"`
+		CreatedAt   time.Time `json:"created_at"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload RequestPayload
 
@@ -48,7 +57,15 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, i)
+		res := ResponsePayload{
+			ID:          i.ID,
+			Name:        i.Name,
+			Description: i.Description,
+			Price:       i.Price,
+			CreatedAt:   i.CreatedAt,
+		}
+
+		api.WriteJSON(w, r, http.StatusCreated, res)
 	}
 
 }
@@ -67,11 +84,20 @@ func (h *handler) HandleGetAll() http.HandlerFunc {
 		}
 
 		api.WriteJSON(w, r, http.StatusOK, api.NewPaginatedResponse(i, meta))
-
 	}
 }
 
 func (h *handler) HandleGetOne() http.HandlerFunc {
+
+	type ResponsePayload struct {
+		ID          int       `json:"id"`
+		Name        string    `json:"name"`
+		Description string    `json:"description"`
+		Price       float64   `json:"price"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.PathValue("id")
 
@@ -93,6 +119,15 @@ func (h *handler) HandleGetOne() http.HandlerFunc {
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, i)
+		res := ResponsePayload{
+			ID:          i.ID,
+			Name:        i.Name,
+			Description: i.Description,
+			Price:       i.Price,
+			CreatedAt:   i.CreatedAt,
+			UpdatedAt:   i.UpdatedAt,
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, res)
 	}
 }

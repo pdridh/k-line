@@ -24,13 +24,13 @@ func NewHandler(v *validator.Validate, s user.Store) *handler {
 }
 
 func (h *handler) HandlePostUser() http.HandlerFunc {
-	type UserRequestPayload struct {
+	type RequestPayload struct {
 		Name     string        `json:"name" validate:"required"`
 		Type     user.UserType `json:"type" validate:"required,oneof=admin waiter kitchen"`
 		Password string        `json:"password" validate:"required,min=8,max=32"`
 	}
 
-	type UserResponsePayload struct {
+	type ResponsePayload struct {
 		ID        uuid.UUID     `json:"id"`
 		Name      string        `json:"name"`
 		Type      user.UserType `json:"type"`
@@ -38,7 +38,7 @@ func (h *handler) HandlePostUser() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p UserRequestPayload
+		var p RequestPayload
 		if err := api.ParseJSON(r, &p); err != nil {
 			api.WriteBadRequestError(w, r)
 			return
@@ -57,7 +57,7 @@ func (h *handler) HandlePostUser() http.HandlerFunc {
 			return
 		}
 
-		res := UserResponsePayload{
+		res := ResponsePayload{
 			ID:        u.ID,
 			Name:      u.Name,
 			Type:      u.Type,
