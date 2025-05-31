@@ -55,15 +55,19 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 
 func (h *handler) HandleGetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var filters MenuFilterArgs
 
-		i, err := h.Store.GetAllItems(r.Context())
+		api.ParseQueryParams(r.URL.Query(), &filters)
+
+		i, meta, err := h.Store.GetAllItems(r.Context(), filters)
 		if err != nil {
 			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, i)
+		api.WriteJSON(w, r, http.StatusOK, api.NewPaginatedResponse(i, meta))
+
 	}
 }
 
