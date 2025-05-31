@@ -4,16 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/pdridh/k-line/api"
+	"github.com/pdridh/k-line/db"
 )
 
 type Store interface {
 	CreateItem(ctx context.Context, name string, description string, price float64) (*MenuItem, error)
-	GetAllItems(ctx context.Context, filters MenuFilterArgs) ([]MenuItem, *api.PaginationMeta, error)
+	GetAllItems(ctx context.Context, filters *MenuFilters) ([]MenuItem, *api.PaginationMeta, error)
 	GetItemById(ctx context.Context, id int) (*MenuItem, error)
 }
 
@@ -52,83 +52,55 @@ func (s *sqlxStore) CreateItem(ctx context.Context, name string, description str
 	return &i, nil
 }
 
-func (s *sqlxStore) GetAllItems(ctx context.Context, filters MenuFilterArgs) ([]MenuItem, *api.PaginationMeta, error) {
-	countQuery := "SELECT COUNT(*) FROM menu_items"
-	baseQuery := `SELECT * FROM menu_items`
+func (s *sqlxStore) GetAllItems(ctx context.Context, filters *MenuFilters) ([]MenuItem, *api.PaginationMeta, error) {
+	baseQuery := db.PSQL.Select("*").From("menu_items")
+	countQuery := db.PSQL.Select("COUNT(*)").From("menu_items")
 
 	var total int
-	meta := api.PaginationMeta{}
 
-	if filters.Search != "" {
-		baseQuery += ` WHERE name ILIKE :search`
-		countQuery += ` WHERE name ILIKE :search`
-		filters.Search = "%" + filters.Search + "%"
-	}
-
-	stmt, err := s.db.PrepareNamedContext(ctx, countQuery)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get total count
-	if err := stmt.GetContext(ctx, &total, filters); err != nil {
-		return nil, nil, err
-	}
-
-	meta.Total = total
-	meta.TotalPages = (total + filters.Limit - 1) / filters.Limit
-	if meta.Total == 0 {
-		return nil, nil, nil
-	}
-
-	// Apply caps to limit
-	if filters.Limit <= 0 || filters.Limit >= 50 {
-		filters.Limit = 20
-	}
-
-	if filters.Page < 0 {
-		filters.Page = 0
-	}
-
-	if filters.Page >= meta.TotalPages {
-		filters.Page = meta.TotalPages
-	}
-
-	meta.Page = filters.Page
-	meta.Limit = filters.Limit
-
-	filters.Page = (filters.Page - 1) * filters.Limit
-
-	var allowedOrderBy = map[string]bool{
-		"created_at": true,
+	// Validate filters
+	allowedOrderBy := map[string]bool{
 		"name":       true,
+		"created_at": true,
 		"id":         true,
 	}
+	filters.Validate(allowedOrderBy, 50, 20, "name")
 
-	if !allowedOrderBy[filters.OrderBy] {
-		filters.OrderBy = "name"
+	// Apply filters
+	if filters.Search != "" {
+		searchPattern := "%" + filters.Search + "%"
+		baseQuery = baseQuery.Where(squirrel.ILike{"name": searchPattern})
+		countQuery = countQuery.Where(squirrel.ILike{"name": searchPattern})
 	}
 
-	filters.SortOrder = strings.ToUpper(filters.SortOrder)
-	if filters.SortOrder != "ASC" && filters.SortOrder != "DESC" {
-		filters.SortOrder = "ASC"
-	}
-
-	baseQuery += fmt.Sprintf(` ORDER BY %s %s LIMIT :limit OFFSET :offset`, filters.OrderBy, filters.SortOrder)
-	log.Println(baseQuery)
-
-	stmt, err = s.db.PrepareNamedContext(ctx, baseQuery)
+	total, err := db.GetCount(ctx, s.db, countQuery)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("store: failed to get count: %w", err)
 	}
 
-	var items []MenuItem
-
-	if err := stmt.SelectContext(ctx, &items, filters); err != nil {
-		return nil, nil, err
+	if total == 0 {
+		return []MenuItem{}, nil, nil
 	}
 
-	return items, &meta, nil
+	meta := api.CalculatePaginationMeta(total, filters.Page, filters.Limit)
+
+	offset := (filters.Page - 1) * filters.Limit
+	finalQuery := baseQuery.
+		OrderBy(filters.OrderBy + " " + filters.SortOrder).
+		Limit(uint64(filters.Limit)).
+		Offset(uint64(offset))
+
+	sql, args, err := finalQuery.ToSql()
+	if err != nil {
+		return []MenuItem{}, nil, fmt.Errorf("store: failed to build query: %w", err)
+	}
+
+	items := []MenuItem{}
+	if err := s.db.SelectContext(ctx, &items, sql, args...); err != nil {
+		return []MenuItem{}, nil, fmt.Errorf("store: failed to get items: %w", err)
+	}
+
+	return items, meta, nil
 }
 
 func (s *sqlxStore) GetItemById(ctx context.Context, id int) (*MenuItem, error) {

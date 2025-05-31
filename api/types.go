@@ -7,6 +7,21 @@ type PaginationMeta struct {
 	TotalPages int `json:"total_pages"`
 }
 
+func CalculatePaginationMeta(total, page, limit int) *PaginationMeta {
+	if limit == 0 {
+		return nil
+	}
+
+	totalPages := (total + limit - 1) / limit
+
+	return &PaginationMeta{
+		Total:      total,
+		TotalPages: totalPages,
+		Page:       page,
+		Limit:      limit,
+	}
+}
+
 type PaginatedResponse[T any] struct {
 	Data []T             `json:"data"`
 	Meta *PaginationMeta `json:"meta,omitempty"`

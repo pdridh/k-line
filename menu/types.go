@@ -1,6 +1,9 @@
 package menu
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type MenuItem struct {
 	ID          int       `db:"id" json:"id"`
@@ -11,10 +14,35 @@ type MenuItem struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
-type MenuFilterArgs struct {
-	Search    string `db:"search" json:"search"`
-	Page      int    `db:"offset" json:"page"` // The request is sent as page but converted to offset for db
-	Limit     int    `db:"limit" json:"limit"`
-	OrderBy   string `db:"order_by" json:"order_by"`
-	SortOrder string `db:"sort_order" json:"sort_order"`
+type MenuFilters struct {
+	Search    string `json:"search"`
+	Page      int    `json:"page"` // The request is sent as page but converted to offset for db
+	Limit     int    `json:"limit"`
+	OrderBy   string `json:"order_by"`
+	SortOrder string `json:"sort_order"`
+}
+
+func (f *MenuFilters) Validate(allowedOrderBy map[string]bool, maxLimit int, defaultLimit int, defaultOrderBy string) {
+	// Normalize pagination
+	if f.Limit <= 0 || f.Limit > maxLimit {
+		f.Limit = defaultLimit
+	}
+
+	if f.Page < 1 {
+		f.Page = 1
+	}
+
+	// Normalize ordering
+	if !allowedOrderBy[f.OrderBy] {
+		f.OrderBy = defaultOrderBy
+	}
+
+	f.SortOrder = strings.ToUpper(f.SortOrder)
+	if f.SortOrder != "ASC" && f.SortOrder != "DESC" {
+		f.SortOrder = "ASC"
+	}
+
+	if f.Search != "" {
+		f.Search = "%" + f.Search + "%"
+	}
 }
