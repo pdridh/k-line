@@ -20,7 +20,7 @@ func NewHandler(s *service) *handler {
 	}
 }
 
-func (h *handler) RegisterUser() http.HandlerFunc {
+func (h *handler) Register() http.HandlerFunc {
 	type RequestPayload struct {
 		Name     string        `json:"name" validate:"required"`
 		Email    string        `json:"email" validate:"required,email"`
