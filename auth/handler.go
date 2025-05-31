@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/user"
+	"github.com/pkg/errors"
 )
 
 type handler struct {
@@ -26,12 +26,14 @@ func NewHandler(v *validator.Validate, s user.Store) *handler {
 func (h *handler) RegisterUser() http.HandlerFunc {
 	type RequestPayload struct {
 		Name     string        `json:"name" validate:"required"`
+		Email    string        `json:"email" validate:"required,email"`
 		Type     user.UserType `json:"type" validate:"required,oneof=admin waiter kitchen"`
 		Password string        `json:"password" validate:"required,min=8,max=32"`
 	}
 
 	type ResponsePayload struct {
 		ID        uuid.UUID     `json:"id"`
+		Email     string        `json:"email"`
 		Name      string        `json:"name"`
 		Type      user.UserType `json:"type"`
 		CreatedAt time.Time     `json:"created_at"`
@@ -50,15 +52,21 @@ func (h *handler) RegisterUser() http.HandlerFunc {
 			return
 		}
 
-		u, err := h.Store.CreateUser(r.Context(), p.Name, p.Type, p.Password)
+		u, err := h.Store.CreateUser(r.Context(), p.Email, p.Name, p.Type, p.Password)
+
+		if errors.Is(err, user.ErrDuplicateEmail) {
+			api.WriteError(w, r, http.StatusConflict, "Cannot use this email", nil)
+			return
+		}
+
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
 
 		res := ResponsePayload{
 			ID:        u.ID,
+			Email:     u.Email,
 			Name:      u.Name,
 			Type:      u.Type,
 			CreatedAt: u.CreatedAt,

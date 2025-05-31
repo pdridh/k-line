@@ -1,8 +1,6 @@
 package db
 
-import (
-	"errors"
-)
+import "github.com/pkg/errors"
 
 var (
 	ErrAlreadyConnected = errors.New("already connected")

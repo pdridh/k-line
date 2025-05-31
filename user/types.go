@@ -16,6 +16,7 @@ const (
 
 type User struct {
 	ID        uuid.UUID `db:"id"`
+	Email     string    `db:"email"`
 	Name      string    `db:"name"`
 	Password  string    `db:"password"`
 	Type      UserType  `db:"type"`
