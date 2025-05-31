@@ -23,7 +23,7 @@ func NewHandler(v *validator.Validate, s user.Store) *handler {
 	}
 }
 
-func (h *handler) HandlePostUser() http.HandlerFunc {
+func (h *handler) RegisterUser() http.HandlerFunc {
 	type RequestPayload struct {
 		Name     string        `json:"name" validate:"required"`
 		Type     user.UserType `json:"type" validate:"required,oneof=admin waiter kitchen"`
@@ -65,6 +65,5 @@ func (h *handler) HandlePostUser() http.HandlerFunc {
 		}
 
 		api.WriteJSON(w, r, http.StatusCreated, res)
-
 	}
 }

@@ -1,7 +1,6 @@
 package menu
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,7 +21,7 @@ func NewHandler(v *validator.Validate, s Store) *handler {
 	}
 }
 
-func (h *handler) HandlePostMenuItem() http.HandlerFunc {
+func (h *handler) CreateItem() http.HandlerFunc {
 	type RequestPayload struct {
 		Name        string  `json:"name" validate:"required"`
 		Description string  `json:"description" validate:"required"`
@@ -70,7 +69,7 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 
 }
 
-func (h *handler) HandleGetAll() http.HandlerFunc {
+func (h *handler) GetAllItems() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var filters MenuFilters
 
@@ -78,7 +77,6 @@ func (h *handler) HandleGetAll() http.HandlerFunc {
 
 		i, meta, err := h.Store.GetAllItems(r.Context(), &filters)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
@@ -87,7 +85,7 @@ func (h *handler) HandleGetAll() http.HandlerFunc {
 	}
 }
 
-func (h *handler) HandleGetOne() http.HandlerFunc {
+func (h *handler) GetItemById() http.HandlerFunc {
 
 	type ResponsePayload struct {
 		ID          int       `json:"id"`
@@ -109,7 +107,6 @@ func (h *handler) HandleGetOne() http.HandlerFunc {
 
 		i, err := h.Store.GetItemById(r.Context(), id)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
