@@ -33,6 +33,7 @@ func New(v *validator.Validate, d *sqlx.DB) *server {
 	menuHandler := menu.NewHandler(v, menuStore)
 
 	// TODO add authorization
+	mux.Handle("POST /auth/login", authHandler.Login())
 	mux.Handle("POST /user", authHandler.RegisterUser())
 
 	mux.Handle("GET /menu", menuHandler.GetAllItems())

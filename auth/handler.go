@@ -75,3 +75,41 @@ func (h *handler) RegisterUser() http.HandlerFunc {
 		api.WriteJSON(w, r, http.StatusCreated, res)
 	}
 }
+
+func (h *handler) Login() http.HandlerFunc {
+	type RequestPayload struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required,min=8,max=32"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var p RequestPayload
+
+		if err := api.ParseJSON(r, &p); err != nil {
+			api.WriteBadRequestError(w, r)
+			return
+		}
+
+		if err := h.Validate.Struct(p); err != nil {
+			v := api.FormatValidationErrors(err)
+			api.WriteError(w, r, http.StatusBadRequest, "validation errors", v)
+			return
+		}
+
+		// Check if user is in store
+		u, err := h.Store.GetUserByEmail(r.Context(), p.Email)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// TODO use hash instead of password here
+		if u == nil || u.Password != p.Password {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid email or password", nil)
+			return
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, "Should login here")
+
+	}
+}
