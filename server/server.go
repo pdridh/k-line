@@ -27,7 +27,9 @@ func New(v *validator.Validate, d *sqlx.DB) *server {
 	mux := http.NewServeMux()
 
 	userStore := user.NewPSQLStore(d)
-	authHandler := auth.NewHandler(v, userStore)
+
+	authService := auth.NewService(v, userStore)
+	authHandler := auth.NewHandler(authService)
 
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)

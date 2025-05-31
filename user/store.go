@@ -12,8 +12,8 @@ import (
 )
 
 type Store interface {
-	CreateUser(ctx context.Context, email string, name string, userType UserType, password string) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	Create(ctx context.Context, email string, name string, userType UserType, password string) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
 }
 
 func NewPSQLStore(db *sqlx.DB) *sqlxStore {
@@ -26,11 +26,11 @@ type sqlxStore struct {
 	db *sqlx.DB
 }
 
-func (s *sqlxStore) CreateUser(ctx context.Context, email string, name string, userType UserType, password string) (*User, error) {
+func (s *sqlxStore) Create(ctx context.Context, email string, name string, userType UserType, password string) (*User, error) {
 	// TODO turn it into hashed passwords
 	q, a, err := db.PSQL.Insert("users").Columns("email", "name", "type", "password").Values(email, name, userType, password).Suffix("RETURNING *").ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build query")
+		return nil, errors.Wrap(err, "squirrel")
 	}
 
 	var u User
@@ -39,20 +39,20 @@ func (s *sqlxStore) CreateUser(ctx context.Context, email string, name string, u
 
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" && strings.Contains(pqErr.Constraint, "email") {
-			return nil, errors.Wrap(ErrDuplicateEmail, "failed to create user")
+			return nil, errors.Wrap(ErrDuplicateEmail, "insert")
 		}
 
-		return nil, errors.Wrap(err, "failed to scan user into struct")
+		return nil, errors.Wrap(err, "scan")
 	}
 
 	return &u, nil
 }
 
-func (s *sqlxStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+func (s *sqlxStore) GetByEmail(ctx context.Context, email string) (*User, error) {
 
 	q, a, err := db.PSQL.Select("*").From("users").Where("email = ?", email).ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build query")
+		return nil, errors.Wrap(err, "squirrel")
 	}
 
 	var u User
@@ -61,7 +61,7 @@ func (s *sqlxStore) GetUserByEmail(ctx context.Context, email string) (*User, er
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "scan")
 	}
 
 	return &u, nil

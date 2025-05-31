@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/user"
@@ -12,14 +11,12 @@ import (
 )
 
 type handler struct {
-	Validate *validator.Validate
-	Store    user.Store
+	Service *service
 }
 
-func NewHandler(v *validator.Validate, s user.Store) *handler {
+func NewHandler(s *service) *handler {
 	return &handler{
-		Validate: v,
-		Store:    s,
+		Service: s,
 	}
 }
 
@@ -46,14 +43,13 @@ func (h *handler) RegisterUser() http.HandlerFunc {
 			return
 		}
 
-		if err := h.Validate.Struct(p); err != nil {
+		if err := h.Service.Validate.Struct(p); err != nil {
 			v := api.FormatValidationErrors(err)
 			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
 			return
 		}
 
-		u, err := h.Store.CreateUser(r.Context(), p.Email, p.Name, p.Type, p.Password)
-
+		u, err := h.Service.CreateUser(r.Context(), p.Email, p.Name, p.Type, p.Password)
 		if errors.Is(err, user.ErrDuplicateEmail) {
 			api.WriteError(w, r, http.StatusConflict, "Cannot use this email", nil)
 			return
@@ -90,26 +86,24 @@ func (h *handler) Login() http.HandlerFunc {
 			return
 		}
 
-		if err := h.Validate.Struct(p); err != nil {
+		if err := h.Service.Validate.Struct(p); err != nil {
 			v := api.FormatValidationErrors(err)
 			api.WriteError(w, r, http.StatusBadRequest, "validation errors", v)
 			return
 		}
 
-		// Check if user is in store
-		u, err := h.Store.GetUserByEmail(r.Context(), p.Email)
+		valid, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
 		if err != nil {
-			api.WriteInternalError(w, r)
-			return
+			switch err {
+			case ErrUnknownEmail, ErrWrongPassword:
+				api.WriteError(w, r, http.StatusUnauthorized, "invalid credentials", nil)
+				return
+			default:
+				api.WriteInternalError(w, r)
+				return
+			}
 		}
 
-		// TODO use hash instead of password here
-		if u == nil || u.Password != p.Password {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid email or password", nil)
-			return
-		}
-
-		api.WriteJSON(w, r, http.StatusOK, "Should login here")
-
+		api.WriteJSON(w, r, http.StatusOK, valid)
 	}
 }
