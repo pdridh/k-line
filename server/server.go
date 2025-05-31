@@ -8,8 +8,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
+	"github.com/pdridh/k-line/auth"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/menu"
+	"github.com/pdridh/k-line/user"
 )
 
 const (
@@ -24,8 +26,14 @@ type server struct {
 func New(v *validator.Validate, d *sqlx.DB) *server {
 	mux := http.NewServeMux()
 
+	userStore := user.NewPSQLStore(d)
+	authHandler := auth.NewHandler(v, userStore)
+
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)
+
+	// TODO add authorization
+	mux.Handle("POST /user", authHandler.HandlePostUser())
 
 	mux.Handle("GET /menu", menuHandler.HandleGetAll())
 	mux.Handle("GET /menu/{id}", menuHandler.HandleGetOne())
