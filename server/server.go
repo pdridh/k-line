@@ -8,8 +8,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jmoiron/sqlx"
+	"github.com/pdridh/k-line/auth"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/menu"
+	"github.com/pdridh/k-line/user"
 )
 
 const (
@@ -24,12 +26,19 @@ type server struct {
 func New(v *validator.Validate, d *sqlx.DB) *server {
 	mux := http.NewServeMux()
 
+	userStore := user.NewPSQLStore(d)
+
+	authService := auth.NewService(v, userStore)
+	authHandler := auth.NewHandler(authService)
+
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)
+	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register()))
+	mux.Handle("POST /auth/login", authHandler.Login())
 
-	mux.Handle("GET /menu", menuHandler.HandleGetAll())
-	mux.Handle("GET /menu/{id}", menuHandler.HandleGetOne())
-	mux.Handle("POST /menu", menuHandler.HandlePostMenuItem())
+	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), user.UserWaiter, user.UserKitchen))
+	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), user.UserWaiter, user.UserKitchen))
+	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
 	mux.Handle("/", http.NotFoundHandler())
 
 	h := &http.Server{

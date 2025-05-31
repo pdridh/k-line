@@ -1,9 +1,9 @@
 package menu
 
 import (
-	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/k-line/api"
@@ -21,11 +21,19 @@ func NewHandler(v *validator.Validate, s Store) *handler {
 	}
 }
 
-func (h *handler) HandlePostMenuItem() http.HandlerFunc {
+func (h *handler) CreateItem() http.HandlerFunc {
 	type RequestPayload struct {
 		Name        string  `json:"name" validate:"required"`
 		Description string  `json:"description" validate:"required"`
 		Price       float64 `json:"price" validate:"required"`
+	}
+
+	type ResponsePayload struct {
+		ID          int       `json:"id"`
+		Name        string    `json:"name"`
+		Description string    `json:"description"`
+		Price       float64   `json:"price"`
+		CreatedAt   time.Time `json:"created_at"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -48,12 +56,20 @@ func (h *handler) HandlePostMenuItem() http.HandlerFunc {
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, i)
+		res := ResponsePayload{
+			ID:          i.ID,
+			Name:        i.Name,
+			Description: i.Description,
+			Price:       i.Price,
+			CreatedAt:   i.CreatedAt,
+		}
+
+		api.WriteJSON(w, r, http.StatusCreated, res)
 	}
 
 }
 
-func (h *handler) HandleGetAll() http.HandlerFunc {
+func (h *handler) GetAllItems() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var filters MenuFilters
 
@@ -61,17 +77,25 @@ func (h *handler) HandleGetAll() http.HandlerFunc {
 
 		i, meta, err := h.Store.GetAllItems(r.Context(), &filters)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
 
 		api.WriteJSON(w, r, http.StatusOK, api.NewPaginatedResponse(i, meta))
-
 	}
 }
 
-func (h *handler) HandleGetOne() http.HandlerFunc {
+func (h *handler) GetItemById() http.HandlerFunc {
+
+	type ResponsePayload struct {
+		ID          int       `json:"id"`
+		Name        string    `json:"name"`
+		Description string    `json:"description"`
+		Price       float64   `json:"price"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.PathValue("id")
 
@@ -83,7 +107,6 @@ func (h *handler) HandleGetOne() http.HandlerFunc {
 
 		i, err := h.Store.GetItemById(r.Context(), id)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
@@ -93,6 +116,15 @@ func (h *handler) HandleGetOne() http.HandlerFunc {
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, i)
+		res := ResponsePayload{
+			ID:          i.ID,
+			Name:        i.Name,
+			Description: i.Description,
+			Price:       i.Price,
+			CreatedAt:   i.CreatedAt,
+			UpdatedAt:   i.UpdatedAt,
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, res)
 	}
 }
