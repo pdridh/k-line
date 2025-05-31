@@ -33,10 +33,7 @@ func New(v *validator.Validate, d *sqlx.DB) *server {
 
 	menuStore := menu.NewPSQLStore(d)
 	menuHandler := menu.NewHandler(v, menuStore)
-
-	// TODO add authorization for different user types
-
-	mux.Handle("POST /auth/register", authHandler.Register())
+	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register(), user.UserAdmin))
 	mux.Handle("POST /auth/login", authHandler.Login())
 
 	mux.Handle("GET /menu", menuHandler.GetAllItems())
