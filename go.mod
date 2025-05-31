@@ -11,6 +11,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/joho/godotenv v1.5.1
+	github.com/pkg/errors v0.9.1
 )
 
 require (
@@ -20,7 +21,6 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect

@@ -3,12 +3,12 @@ package menu
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/db"
+	"github.com/pkg/errors"
 )
 
 type Store interface {
@@ -30,23 +30,15 @@ type sqlxStore struct {
 // Insert a menu item using the given name, description and price and returns the MenuItem filled with all the fields
 // in the table.
 func (s *sqlxStore) CreateItem(ctx context.Context, name string, description string, price float64) (*MenuItem, error) {
-	const query = `INSERT INTO menu_items (name, description, price) VALUES(:name, :description, :price)	RETURNING *;`
-
-	stmt, err := s.db.PrepareNamedContext(ctx, query)
+	query, args, err := db.PSQL.Insert("menu_items").Columns("name", "description", "price").Values(name, description, price).Suffix("RETURNING *").ToSql()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to build query")
 	}
 
 	var i MenuItem
 
-	namedArgs := map[string]any{
-		"name":        name,
-		"description": description,
-		"price":       price,
-	}
-
-	if err := stmt.GetContext(ctx, &i, namedArgs); err != nil {
-		return nil, err
+	if err := s.db.QueryRowxContext(ctx, query, args...).StructScan(&i); err != nil {
+		return nil, errors.Wrap(err, "failed to scan item into MenuItem")
 	}
 
 	return &i, nil
@@ -75,7 +67,7 @@ func (s *sqlxStore) GetAllItems(ctx context.Context, filters *MenuFilters) ([]Me
 
 	total, err := db.GetCount(ctx, s.db, countQuery)
 	if err != nil {
-		return nil, nil, fmt.Errorf("store: failed to get count: %w", err)
+		return nil, nil, errors.Wrap(err, "failed to get count")
 	}
 
 	if total == 0 {
@@ -90,31 +82,35 @@ func (s *sqlxStore) GetAllItems(ctx context.Context, filters *MenuFilters) ([]Me
 		Limit(uint64(filters.Limit)).
 		Offset(uint64(offset))
 
-	sql, args, err := finalQuery.ToSql()
+	queryString, args, err := finalQuery.ToSql()
 	if err != nil {
-		return []MenuItem{}, nil, fmt.Errorf("store: failed to build query: %w", err)
+		return []MenuItem{}, nil, errors.Wrap(err, "failed to build query")
 	}
 
 	items := []MenuItem{}
-	if err := s.db.SelectContext(ctx, &items, sql, args...); err != nil {
-		return []MenuItem{}, nil, fmt.Errorf("store: failed to get items: %w", err)
+	if err := s.db.SelectContext(ctx, &items, queryString, args...); err != nil {
+		return []MenuItem{}, nil, errors.Wrap(err, "failed to get items")
 	}
 
 	return items, meta, nil
 }
 
 func (s *sqlxStore) GetItemById(ctx context.Context, id int) (*MenuItem, error) {
-	query := `SELECT * FROM menu_items WHERE id = ?`
-	query = s.db.Rebind(query)
+	baseQuery := db.PSQL.Select("*").From("menu_items").Where("id = ?", id)
+
+	queryString, args, err := baseQuery.ToSql()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build query")
+	}
 
 	var item MenuItem
 
-	row := s.db.QueryRowxContext(ctx, query, id)
+	row := s.db.QueryRowxContext(ctx, queryString, args...)
 	if err := row.StructScan(&item); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "GetItemById failed to load row into struct")
 	}
 
 	return &item, nil
