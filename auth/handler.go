@@ -92,7 +92,7 @@ func (h *handler) Login() http.HandlerFunc {
 			return
 		}
 
-		valid, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
+		t, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
 		if err != nil {
 			switch err {
 			case ErrUnknownEmail, ErrWrongPassword:
@@ -104,6 +104,8 @@ func (h *handler) Login() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, valid)
+		SetJWTCookie(w, t)
+
+		api.WriteJSON(w, r, http.StatusOK, "login succesfull")
 	}
 }

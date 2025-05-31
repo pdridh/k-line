@@ -3,15 +3,18 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type ServerConfig struct {
-	Env         string
-	Host        string
-	Port        string
-	DatabaseURI string
+	Env           string
+	Host          string
+	Port          string
+	DatabaseURI   string
+	JWTSecret     string
+	JWTExpiration time.Duration
 }
 
 var server *ServerConfig
@@ -32,10 +35,12 @@ func Load() {
 		}
 	}
 	server = &ServerConfig{
-		Env:         env,
-		Host:        getEnvOrDefault("HOST", "localhost"),
-		Port:        getEnvOrDefault("PORT", "8080"),
-		DatabaseURI: getEnvOrDefault("DATABASE_URI", ""),
+		Env:           env,
+		Host:          getEnvOrDefault("HOST", "localhost"),
+		Port:          getEnvOrDefault("PORT", "8080"),
+		DatabaseURI:   getEnvOrDefault("DATABASE_URI", ""),
+		JWTSecret:     getEnvOrDefault("JWT_SECRET", "secret:)"),
+		JWTExpiration: time.Hour * 24, // TODO change this to something better
 	}
 }
 
