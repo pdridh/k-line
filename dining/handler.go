@@ -1,7 +1,6 @@
 package dining
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -62,7 +61,6 @@ func (h *handler) CreateSession() http.HandlerFunc {
 
 		sess, err := h.Service.CreateSession(r.Context(), p.TableID)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
@@ -95,7 +93,6 @@ func (h *handler) AddItemsToSession() http.HandlerFunc {
 		var p RequestPayload
 
 		if err := api.ParseJSON(r, &p); err != nil {
-			log.Println(err)
 			api.WriteBadRequestError(w, r)
 			return
 		}
@@ -114,12 +111,45 @@ func (h *handler) AddItemsToSession() http.HandlerFunc {
 				api.WriteError(w, r, http.StatusConflict, "table has no session (empty table)", nil)
 				return
 			default:
-				log.Println(err)
 				api.WriteInternalError(w, r)
 				return
 			}
 		}
 
 		api.WriteJSON(w, r, http.StatusCreated, i)
+	}
+}
+
+func (h *handler) GetSessionItems() http.HandlerFunc {
+
+	type QueryPayload struct {
+		Status ItemStatus `json:"status" validate:"oneof=pending preparing ready completed cancelled"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		sessionID := r.PathValue("sessionID")
+
+		var p QueryPayload
+		api.ParseQueryParams(r.URL.Query(), &p)
+
+		if err := h.Service.Validate.Struct(p); err != nil {
+			v := api.FormatValidationErrors(err)
+			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			return
+		}
+
+		items, err := h.Service.GetSessionItemsWithStatus(r.Context(), sessionID, p.Status)
+		if err != nil {
+			switch err {
+			case ErrInvalidUUID:
+				api.WriteNotFoundError(w, r)
+				return
+			default:
+				api.WriteInternalError(w, r)
+				return
+			}
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, map[string]any{"items": items})
 	}
 }

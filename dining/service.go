@@ -34,3 +34,7 @@ func (s *service) GetOngoingTable(ctx context.Context, tableID int) (*Session, e
 func (s *service) AddItemsToSession(ctx context.Context, tableID int, items []SessionItem) ([]SessionItem, error) {
 	return nil, nil
 }
+
+func (s *service) GetSessionItemsWithStatus(ctx context.Context, sessionID string, itemStatus ItemStatus) ([]SessionItem, error) {
+	return nil, nil
+}

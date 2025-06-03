@@ -14,6 +14,7 @@ type Store interface {
 	CreateSession(ctx context.Context, tableID int) (*Session, error)
 	GetOngoingSessionByTable(ctx context.Context, tableID int) (*Session, error)
 	CreateSessionItems(ctx context.Context, sessionID uuid.UUID, items []SessionItem) ([]SessionItem, error)
+	GetSessionItemsWithStatus(ctx context.Context, sessionID uuid.UUID, itemStatus ItemStatus) ([]SessionItem, error)
 }
 
 func NewPSQLStore(db *sqlx.DB) *sqlxStore {
@@ -68,12 +69,12 @@ func (s *sqlxStore) CreateSessionItems(ctx context.Context, sessionID uuid.UUID,
 	}
 	q, a, err := baseQuery.Suffix("RETURNING *").ToSql()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build query")
+		return []SessionItem{}, errors.Wrap(err, "failed to build query")
 	}
 
 	rows, err := s.db.Queryx(q, a...)
 	if err != nil {
-		return nil, err
+		return []SessionItem{}, err
 	}
 	defer rows.Close()
 
@@ -81,10 +82,24 @@ func (s *sqlxStore) CreateSessionItems(ctx context.Context, sessionID uuid.UUID,
 	for rows.Next() {
 		var i SessionItem
 		if err := rows.StructScan(&i); err != nil {
-			return nil, err
+			return []SessionItem{}, err
 		}
 		inserted = append(inserted, i)
 	}
 
 	return inserted, nil
+}
+
+func (s *sqlxStore) GetSessionItemsWithStatus(ctx context.Context, sessionID uuid.UUID, itemStatus ItemStatus) ([]SessionItem, error) {
+	q, a, err := db.PSQL.Select("*").From("dining_items").Where("session_id = ? AND status = ?", sessionID, itemStatus).ToSql()
+	if err != nil {
+		return []SessionItem{}, errors.Wrap(err, "failed to build query")
+	}
+
+	items := []SessionItem{}
+	if err := s.db.SelectContext(ctx, &items, q, a...); err != nil {
+		return []SessionItem{}, errors.Wrap(err, "failed to get items")
+	}
+
+	return items, nil
 }

@@ -44,6 +44,9 @@ func New(v *validator.Validate, store db.Store) *server {
 
 	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateSession(), sqlc.UserTypeWaiter))
 	mux.Handle("POST /dining/{tableID}/item", auth.Middleware(diningHandler.AddItemsToSession(), sqlc.UserTypeWaiter))
+	mux.Handle("GET /dining/{sessionID}/item", auth.Middleware(diningHandler.GetSessionItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
+	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateSession(), sqlc.UserTypeWaiter))
+	mux.Handle("POST /dining/{tableID}/item", auth.Middleware(diningHandler.AddItemsToSession(), sqlc.UserTypeWaiter))
 
 	mux.Handle("/", http.NotFoundHandler())
 
