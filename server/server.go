@@ -11,6 +11,7 @@ import (
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/db"
 	"github.com/pdridh/k-line/db/sqlc"
+	"github.com/pdridh/k-line/dining"
 	"github.com/pdridh/k-line/menu"
 )
 
@@ -31,12 +32,18 @@ func New(v *validator.Validate, store db.Store) *server {
 
 	menuHandler := menu.NewHandler(v, store)
 
-	mux.Handle("POST /auth/register", authHandler.Register())
+	diningService := dining.NewService(v, store)
+	diningHandler := dining.NewHandler(diningService)
+
+	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register()))
 	mux.Handle("POST /auth/login", authHandler.Login())
 
 	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
+
+	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateSession(), sqlc.UserTypeWaiter))
+	mux.Handle("POST /dining/{tableID}/item", auth.Middleware(diningHandler.AddItemsToSession(), sqlc.UserTypeWaiter))
 
 	mux.Handle("/", http.NotFoundHandler())
 
