@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
 	"github.com/pdridh/k-line/auth"
 	"github.com/pdridh/k-line/config"
+	"github.com/pdridh/k-line/db"
+	"github.com/pdridh/k-line/db/sqlc"
 	"github.com/pdridh/k-line/menu"
-	"github.com/pdridh/k-line/user"
 )
 
 const (
@@ -23,27 +23,28 @@ type server struct {
 	HttpServer *http.Server
 }
 
-func New(v *validator.Validate, d *sqlx.DB) *server {
+func New(v *validator.Validate, store db.Store) *server {
 	mux := http.NewServeMux()
 
-	userStore := user.NewPSQLStore(d)
-
-	authService := auth.NewService(v, userStore)
+	authService := auth.NewService(v, store)
 	authHandler := auth.NewHandler(authService)
 
-	menuStore := menu.NewPSQLStore(d)
-	menuHandler := menu.NewHandler(v, menuStore)
-	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register()))
+	menuHandler := menu.NewHandler(v, store)
+
+	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
 
-	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), user.UserWaiter, user.UserKitchen))
-	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), user.UserWaiter, user.UserKitchen))
+	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
+	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
+
 	mux.Handle("/", http.NotFoundHandler())
+
+	var handler http.Handler = mux
 
 	h := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
-		Handler:      mux,
+		Handler:      handler,
 		WriteTimeout: WriteTimeout,
 		ReadTimeout:  ReadTimeout,
 	}

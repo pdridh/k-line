@@ -1,28 +1,44 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-playground/validator/v10"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/db"
 	"github.com/pdridh/k-line/server"
 )
 
+var interruptSignals = []os.Signal{
+	os.Interrupt,
+	syscall.SIGTERM,
+	syscall.SIGINT,
+}
+
 func main() {
 	config.Load()
 
-	d, err := db.Connect()
+	uri := config.Server().DatabaseURI
+
+	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
+	defer stop()
+
+	pool, err := pgxpool.New(ctx, uri)
 	if err != nil {
-		log.Println("failed to connect to db: ", err)
-		return
+		log.Fatalln("cannot connect to db", err)
 	}
 
+	store := db.NewPSQLStore(pool)
+
 	v := validator.New()
-	s := server.New(v, d)
+	s := server.New(v, store)
 
 	if err := s.Start(); err != nil {
-		log.Fatalln("Failed to start the server: ", err)
+		log.Fatalln("failed to start the server: ", err)
 	}
 }

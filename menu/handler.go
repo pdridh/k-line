@@ -1,20 +1,23 @@
 package menu
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pdridh/k-line/api"
+	"github.com/pdridh/k-line/db"
+	"github.com/pdridh/k-line/db/sqlc"
 )
 
 type handler struct {
-	Store    Store
+	Store    db.Store
 	Validate *validator.Validate
 }
 
-func NewHandler(v *validator.Validate, s Store) *handler {
+func NewHandler(v *validator.Validate, s db.Store) *handler {
 	return &handler{
 		Validate: v,
 		Store:    s,
@@ -23,17 +26,18 @@ func NewHandler(v *validator.Validate, s Store) *handler {
 
 func (h *handler) CreateItem() http.HandlerFunc {
 	type RequestPayload struct {
-		Name        string  `json:"name" validate:"required"`
-		Description string  `json:"description" validate:"required"`
-		Price       float64 `json:"price" validate:"required"`
+		Name           string      `json:"name" validate:"required"`
+		Description    pgtype.Text `json:"description" validate:"required"`
+		Price          float64     `json:"price" validate:"required"`
+		RequiresTicket bool        `json:"requires_ticket" validate:"required"`
 	}
 
 	type ResponsePayload struct {
-		ID          int       `json:"id"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Price       float64   `json:"price"`
-		CreatedAt   time.Time `json:"created_at"`
+		ID          int32            `json:"id"`
+		Name        string           `json:"name"`
+		Description pgtype.Text      `json:"description"`
+		Price       float64          `json:"price"`
+		CreatedAt   pgtype.Timestamp `json:"created_at"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +54,19 @@ func (h *handler) CreateItem() http.HandlerFunc {
 			return
 		}
 
-		i, err := h.Store.CreateItem(r.Context(), payload.Name, payload.Description, payload.Price)
+		arg := sqlc.CreateMenuItemParams{
+			Name:           payload.Name,
+			Description:    payload.Description,
+			Price:          payload.Price,
+			RequiresTicket: payload.RequiresTicket,
+		}
+		i, err := h.Store.CreateMenuItem(r.Context(), arg)
 		if err != nil {
+			errCode := db.GetSQLErrorCode(err)
+			if errCode == db.UniqueViolation {
+				api.WriteError(w, r, http.StatusConflict, "item with the same name already exists", nil)
+				return
+			}
 			api.WriteInternalError(w, r)
 			return
 		}
@@ -74,26 +89,34 @@ func (h *handler) GetAllItems() http.HandlerFunc {
 		var filters MenuFilters
 
 		api.ParseQueryParams(r.URL.Query(), &filters)
+		filters.Validate(50, 20)
 
-		i, meta, err := h.Store.GetAllItems(r.Context(), &filters)
+		offset := (filters.Page - 1) * filters.Limit
+		arg := sqlc.GetMenuItemsParams{
+			Search: filters.Search,
+			Limit:  filters.Limit,
+			Offset: offset,
+		}
+
+		i, err := h.Store.GetMenuItems(r.Context(), arg)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, api.NewPaginatedResponse(i, meta))
+		// TODO dont expose db models, make a response object
+		api.WriteJSON(w, r, http.StatusOK, i)
 	}
 }
 
 func (h *handler) GetItemById() http.HandlerFunc {
 
 	type ResponsePayload struct {
-		ID          int       `json:"id"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Price       float64   `json:"price"`
-		CreatedAt   time.Time `json:"created_at"`
-		UpdatedAt   time.Time `json:"updated_at"`
+		ID          int32            `json:"id"`
+		Name        string           `json:"name"`
+		Description pgtype.Text      `json:"description"`
+		Price       float64          `json:"price"`
+		CreatedAt   pgtype.Timestamp `json:"created_at"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -105,14 +128,15 @@ func (h *handler) GetItemById() http.HandlerFunc {
 			return
 		}
 
-		i, err := h.Store.GetItemById(r.Context(), id)
+		i, err := h.Store.GetItemByID(r.Context(), int32(id))
 		if err != nil {
-			api.WriteInternalError(w, r)
-			return
-		}
 
-		if i == nil {
-			api.WriteNotFoundError(w, r)
+			if errors.Is(err, db.ErrRecordNotFound) {
+				api.WriteNotFoundError(w, r)
+				return
+			}
+
+			api.WriteInternalError(w, r)
 			return
 		}
 
@@ -122,7 +146,6 @@ func (h *handler) GetItemById() http.HandlerFunc {
 			Description: i.Description,
 			Price:       i.Price,
 			CreatedAt:   i.CreatedAt,
-			UpdatedAt:   i.UpdatedAt,
 		}
 
 		api.WriteJSON(w, r, http.StatusOK, res)

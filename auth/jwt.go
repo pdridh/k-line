@@ -6,12 +6,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pdridh/k-line/config"
-	"github.com/pdridh/k-line/user"
+	"github.com/pdridh/k-line/db/sqlc"
 )
 
 // Generate a jwt with id and userType as the user's claims
 // Returns the token as a string.
-func GenerateJWT(id string, userType user.UserType, duration time.Duration) (string, error) {
+func GenerateJWT(id string, userType sqlc.UserType, duration time.Duration) (string, error) {
 	claims := UserClaims{
 		UserID:   id,
 		UserType: userType,
@@ -48,7 +48,7 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 		MaxAge:   int(config.Server().JWTExpiration.Seconds()),
 		HttpOnly: true,
 		Secure:   config.Server().Env == "production",
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 	}
 

@@ -5,47 +5,58 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/k-line/config"
-	"github.com/pdridh/k-line/user"
+	"github.com/pdridh/k-line/db"
+	"github.com/pdridh/k-line/db/sqlc"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type service struct {
-	Validate  *validator.Validate
-	UserStore user.Store
+	Validate *validator.Validate
+	Store    db.Store
 }
 
 // Simple wrapper to create a new user service given the stores and validator
-func NewService(v *validator.Validate, u user.Store) *service {
+func NewService(v *validator.Validate, u db.Store) *service {
 	return &service{
-		Validate:  v,
-		UserStore: u,
+		Validate: v,
+		Store:    u,
 	}
 }
 
-func (s *service) CreateUser(ctx context.Context, email string, name string, userType user.UserType, password string) (*user.User, error) {
+func (s *service) CreateUser(ctx context.Context, email string, name string, userType sqlc.UserType, password string) (sqlc.User, error) {
 	// Hash password
+	var u sqlc.User
 	hashedPassword, err := HashPassword(password)
 	if err != nil {
-		return nil, errors.Wrap(err, "hash")
+		return u, errors.Wrap(err, "hash")
 	}
 
-	u, err := s.UserStore.Create(ctx, email, name, userType, hashedPassword)
+	arg := sqlc.CreateUserParams{
+		Email:    email,
+		Name:     name,
+		Type:     userType,
+		Password: hashedPassword,
+	}
+
+	u, err = s.Store.CreateUser(ctx, arg)
 	if err != nil {
-		return nil, errors.Wrap(err, "store")
+		errCode := db.GetSQLErrorCode(err)
+		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
+			return u, errors.Wrap(ErrEmailAlreadyExists, "store")
+		}
 	}
 
 	return u, nil
 }
 
 func (s *service) AuthenticateUser(ctx context.Context, email string, password string) (string, error) {
-	u, err := s.UserStore.GetByEmail(ctx, email)
+	u, err := s.Store.GetUserByEmail(ctx, email)
 	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return "", errors.Wrap(ErrUnknownEmail, "store")
+		}
 		return "", errors.Wrap(err, "store")
-	}
-
-	if u == nil {
-		return "", ErrUnknownEmail
 	}
 
 	// Check if the password is correct
