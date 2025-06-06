@@ -3,7 +3,7 @@ package dining
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type SessionStatus string
@@ -15,7 +15,7 @@ const (
 )
 
 type Session struct {
-	ID          uuid.UUID     `db:"id"`
+	ID          pgtype.UUID   `db:"id"`
 	Status      SessionStatus `db:"status"`
 	TableID     int           `db:"table_id"`
 	StartedAt   time.Time     `db:"started_at"`
@@ -33,9 +33,9 @@ const (
 )
 
 type SessionItem struct {
-	ID        int        `db:"id"`
-	SessionID uuid.UUID  `db:"session_id"`
-	ItemID    int        `db:"item_id" json:"item_id"`
-	Quantity  int        `db:"quantity" json:"quantity"`
-	Status    ItemStatus `db:"status"`
+	ID        int         `db:"id"`
+	SessionID pgtype.UUID `db:"session_id"`
+	ItemID    int         `db:"item_id" json:"item_id"`
+	Quantity  int         `db:"quantity" json:"quantity"`
+	Status    ItemStatus  `db:"status"`
 }

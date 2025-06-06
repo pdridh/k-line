@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pdridh/k-line/api"
 )
 
@@ -26,7 +26,7 @@ func (h *handler) CreateSession() http.HandlerFunc {
 	}
 
 	type ResponsePayload struct {
-		ID          uuid.UUID     `json:"id"`
+		ID          pgtype.UUID   `json:"id"`
 		Status      SessionStatus `json:"status"`
 		TableID     int           `json:"table_id"`
 		StartedAt   time.Time     `json:"started_at"`
