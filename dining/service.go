@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pdridh/k-line/db"
+	"github.com/pdridh/k-line/db/sqlc"
+	"github.com/pkg/errors"
 )
 
 type service struct {
@@ -19,11 +22,30 @@ func NewService(v *validator.Validate, s db.Store) *service {
 	}
 }
 
+func (s *service) CreateOrder(ctx context.Context, tableID pgtype.Text, employeeID pgtype.UUID) (*pgtype.UUID, error) {
+
+	t, err := s.store.GetTableByID(ctx, tableID.String)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return nil, errors.Wrap(ErrUnknownTable, "store")
+		}
+		return nil, errors.Wrap(err, "store")
+	}
+
+	// Check if the table is available
+	if t.Status != sqlc.TableStatusAvailable {
+		return nil, errors.Wrap(ErrTableNotAvaliable, "store")
+	}
+
+	return s.store.CreateDiningOrderTx(ctx, tableID, employeeID)
+}
+
 func (s *service) CreateSession(ctx context.Context, tableID int) (*Session, error) {
 	return nil, nil
 }
 
 func (s *service) IsTableAvailable(ctx context.Context, tableID int) (bool, error) {
+
 	return false, nil
 }
 

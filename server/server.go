@@ -35,18 +35,14 @@ func New(v *validator.Validate, store db.Store) *server {
 	diningService := dining.NewService(v, store)
 	diningHandler := dining.NewHandler(diningService)
 
-	mux.Handle("POST /auth/register", auth.Middleware(authHandler.Register()))
+	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
 
 	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
 
-	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateSession(), sqlc.UserTypeWaiter))
-	mux.Handle("POST /dining/{tableID}/item", auth.Middleware(diningHandler.AddItemsToSession(), sqlc.UserTypeWaiter))
-	mux.Handle("GET /dining/{sessionID}/item", auth.Middleware(diningHandler.GetSessionItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
-	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateSession(), sqlc.UserTypeWaiter))
-	mux.Handle("POST /dining/{tableID}/item", auth.Middleware(diningHandler.AddItemsToSession(), sqlc.UserTypeWaiter))
+	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateOrder(), sqlc.UserTypeWaiter))
 
 	mux.Handle("/", http.NotFoundHandler())
 

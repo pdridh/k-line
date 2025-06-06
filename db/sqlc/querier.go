@@ -6,15 +6,20 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) (MenuItem, error)
+	CreateOrder(ctx context.Context, arg CreateOrderParams) (pgtype.UUID, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetItemByID(ctx context.Context, id int32) (MenuItem, error)
 	GetMenuItems(ctx context.Context, arg GetMenuItemsParams) ([]MenuItem, error)
+	GetTableByID(ctx context.Context, id string) (Table, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUsers(ctx context.Context, arg GetUsersParams) ([]User, error)
+	UpdateTableStatus(ctx context.Context, arg UpdateTableStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)
