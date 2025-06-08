@@ -37,6 +37,7 @@ func New(v *validator.Validate, store db.Store) *server {
 
 	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
+	mux.Handle("GET /auth/", authHandler.GetAuth())
 
 	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
