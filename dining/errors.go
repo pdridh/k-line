@@ -8,4 +8,5 @@ var (
 	ErrTableNotAvaliable = errors.New("table is not available")
 	ErrUnknownOrder      = errors.New("order does not exist")
 	ErrOrderNotOngoing   = errors.New("order is not ongoing")
+	ErrUnkownOrderItem   = errors.New("order item does not exist")
 )

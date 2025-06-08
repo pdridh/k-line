@@ -40,9 +40,19 @@ func (s *service) CreateOrder(ctx context.Context, tableID pgtype.Text, employee
 	return s.store.CreateDiningOrderTx(ctx, tableID, employeeID)
 }
 
-func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, items []RequestItem) error {
+func (s *service) IsOngoingOrder(ctx context.Context, orderID pgtype.UUID) (bool, error) {
 	// Check if the orderID is open and shit
 	o, err := s.store.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return false, errors.Wrap(err, "IsOngoingOrder")
+	}
+
+	return o.Status == sqlc.OrderStatusOngoing, nil
+}
+
+func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, items []RequestItem) error {
+	// Check if the orderID is open and shit
+	ongoing, err := s.IsOngoingOrder(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return errors.Wrap(ErrUnknownOrder, "store")
@@ -50,12 +60,12 @@ func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, item
 		return errors.Wrap(err, "store")
 	}
 
-	if o.Status != sqlc.OrderStatusOngoing {
+	if !ongoing {
 		return errors.Wrap(ErrOrderNotOngoing, "store")
 	}
 
 	var arg sqlc.AddOrderItemsBulkParams
-	arg.OrderID = o.ID
+	arg.OrderID = orderID
 
 	for _, i := range items {
 		arg.ItemIds = append(arg.ItemIds, int32(i.ItemID))
@@ -68,4 +78,37 @@ func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, item
 	}
 
 	return nil
+}
+
+func (s *service) UpdateOrderItem(ctx context.Context, orderID pgtype.UUID, orderItemID int, status sqlc.OrderItemStatus) error {
+	// Check if the order is valid
+	ongoing, err := s.IsOngoingOrder(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return errors.Wrap(ErrUnknownOrder, "store")
+		}
+		return errors.Wrap(err, "store")
+	}
+
+	if !ongoing {
+		return errors.Wrap(ErrOrderNotOngoing, "store")
+	}
+
+	// Check if the order contains the order item
+
+	_, err = s.store.GetOrderItemByID(ctx, sqlc.GetOrderItemByIDParams{ID: int64(orderItemID), OrderID: orderID})
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return errors.Wrap(ErrUnkownOrderItem, "store")
+		}
+		return errors.Wrap(err, "store")
+	}
+
+	arg := sqlc.UpdateOrderItemStatusParams{
+		ID:      int64(orderItemID),
+		OrderID: orderID,
+		Status:  status,
+	}
+
+	return s.store.UpdateOrderItemStatus(ctx, arg)
 }

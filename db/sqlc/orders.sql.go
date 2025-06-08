@@ -75,3 +75,45 @@ func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, erro
 	)
 	return i, err
 }
+
+const getOrderItemByID = `-- name: GetOrderItemByID :one
+SELECT id, order_id, item_id, quantity, notes, status, added_at FROM order_items
+WHERE order_id = $1 AND id = $2
+`
+
+type GetOrderItemByIDParams struct {
+	OrderID pgtype.UUID `db:"order_id"`
+	ID      int64       `db:"id"`
+}
+
+func (q *Queries) GetOrderItemByID(ctx context.Context, arg GetOrderItemByIDParams) (OrderItem, error) {
+	row := q.db.QueryRow(ctx, getOrderItemByID, arg.OrderID, arg.ID)
+	var i OrderItem
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ItemID,
+		&i.Quantity,
+		&i.Notes,
+		&i.Status,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
+const updateOrderItemStatus = `-- name: UpdateOrderItemStatus :exec
+UPDATE order_items
+SET status = $1
+WHERE order_id = $2 AND id = $3
+`
+
+type UpdateOrderItemStatusParams struct {
+	Status  OrderItemStatus `db:"status"`
+	OrderID pgtype.UUID     `db:"order_id"`
+	ID      int64           `db:"id"`
+}
+
+func (q *Queries) UpdateOrderItemStatus(ctx context.Context, arg UpdateOrderItemStatusParams) error {
+	_, err := q.db.Exec(ctx, updateOrderItemStatus, arg.Status, arg.OrderID, arg.ID)
+	return err
+}
