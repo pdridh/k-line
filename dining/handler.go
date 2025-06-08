@@ -66,3 +66,38 @@ func (h *handler) CreateOrder() http.HandlerFunc {
 	}
 
 }
+
+func (h *handler) AddOrderItem() http.HandlerFunc {
+
+	type RequestPayload struct {
+		Items []RequestItem `json:"items" validate:"required"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+
+		// Check if order is valid
+		id := pgtype.UUID{}
+		if err := id.Scan(idStr); err != nil {
+			api.WriteNotFoundError(w, r)
+			return
+		}
+
+		var p RequestPayload
+
+		if err := api.ParseJSON(r, &p); err != nil {
+			api.WriteBadRequestError(w, r)
+			return
+		}
+
+		if err := h.Service.Validate.Struct(p); err != nil {
+			v := api.FormatValidationErrors(err)
+			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			return
+		}
+
+		h.Service.AddItemsToOrder(r.Context(), id, p.Items)
+
+		api.WriteJSON(w, r, http.StatusCreated, p)
+	}
+}

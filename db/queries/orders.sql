@@ -7,3 +7,11 @@ INSERT INTO orders (
   $1, $2, $3
 ) RETURNING id;
 
+-- name: GetOrderByID :one
+SELECT * FROM orders 
+WHERE id = $1;
+
+
+-- name: AddOrderItemsBulk :exec
+INSERT INTO order_items (order_id, item_id, quantity, notes)
+SELECT $1, unnest(@item_ids::int[]), unnest(@quantity::int[]), unnest(@notes::text[]);

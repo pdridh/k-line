@@ -43,6 +43,7 @@ func New(v *validator.Validate, store db.Store) *server {
 	mux.Handle("POST /menu", auth.Middleware(menuHandler.CreateItem()))
 
 	mux.Handle("POST /dining", auth.Middleware(diningHandler.CreateOrder(), sqlc.UserTypeWaiter))
+	mux.Handle("POST /dining/{id}/item", auth.Middleware(diningHandler.AddOrderItem(), sqlc.UserTypeWaiter))
 
 	mux.Handle("/", http.NotFoundHandler())
 

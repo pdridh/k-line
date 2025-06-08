@@ -11,11 +11,13 @@ import (
 )
 
 type Querier interface {
+	AddOrderItemsBulk(ctx context.Context, arg AddOrderItemsBulkParams) error
 	CreateMenuItem(ctx context.Context, arg CreateMenuItemParams) (MenuItem, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (pgtype.UUID, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetItemByID(ctx context.Context, id int32) (MenuItem, error)
 	GetMenuItems(ctx context.Context, arg GetMenuItemsParams) ([]MenuItem, error)
+	GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error)
 	GetTableByID(ctx context.Context, id string) (Table, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUsers(ctx context.Context, arg GetUsersParams) ([]User, error)

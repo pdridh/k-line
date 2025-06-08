@@ -40,23 +40,32 @@ func (s *service) CreateOrder(ctx context.Context, tableID pgtype.Text, employee
 	return s.store.CreateDiningOrderTx(ctx, tableID, employeeID)
 }
 
-func (s *service) CreateSession(ctx context.Context, tableID int) (*Session, error) {
-	return nil, nil
-}
+func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, items []RequestItem) error {
+	// Check if the orderID is open and shit
+	o, err := s.store.GetOrderByID(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return errors.Wrap(ErrUnknownOrder, "store")
+		}
+		return errors.Wrap(err, "store")
+	}
 
-func (s *service) IsTableAvailable(ctx context.Context, tableID int) (bool, error) {
+	if o.Status != sqlc.OrderStatusOngoing {
+		return errors.Wrap(ErrOrderNotOngoing, "store")
+	}
 
-	return false, nil
-}
+	var arg sqlc.AddOrderItemsBulkParams
+	arg.OrderID = o.ID
 
-func (s *service) GetOngoingTable(ctx context.Context, tableID int) (*Session, error) {
-	return nil, nil
-}
+	for _, i := range items {
+		arg.ItemIds = append(arg.ItemIds, int32(i.ItemID))
+		arg.Quantity = append(arg.Quantity, int32(i.Quantity))
+		arg.Notes = append(arg.Notes, i.Note)
+	}
 
-func (s *service) AddItemsToSession(ctx context.Context, tableID int, items []SessionItem) ([]SessionItem, error) {
-	return nil, nil
-}
+	if err := s.store.AddOrderItemsBulk(ctx, arg); err != nil {
+		return err
+	}
 
-func (s *service) GetSessionItemsWithStatus(ctx context.Context, sessionID string, itemStatus ItemStatus) ([]SessionItem, error) {
-	return nil, nil
+	return nil
 }

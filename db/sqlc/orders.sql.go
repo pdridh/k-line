@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addOrderItemsBulk = `-- name: AddOrderItemsBulk :exec
+INSERT INTO order_items (order_id, item_id, quantity, notes)
+SELECT $1, unnest($2::int[]), unnest($3::int[]), unnest($4::text[])
+`
+
+type AddOrderItemsBulkParams struct {
+	OrderID  pgtype.UUID `db:"order_id"`
+	ItemIds  []int32     `db:"item_ids"`
+	Quantity []int32     `db:"quantity"`
+	Notes    []string    `db:"notes"`
+}
+
+func (q *Queries) AddOrderItemsBulk(ctx context.Context, arg AddOrderItemsBulkParams) error {
+	_, err := q.db.Exec(ctx, addOrderItemsBulk,
+		arg.OrderID,
+		arg.ItemIds,
+		arg.Quantity,
+		arg.Notes,
+	)
+	return err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
   type,
@@ -32,4 +54,24 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (pgtyp
 	var id pgtype.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getOrderByID = `-- name: GetOrderByID :one
+SELECT id, type, employee_id, status, table_id, created_at, completed_at FROM orders 
+WHERE id = $1
+`
+
+func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByID, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.EmployeeID,
+		&i.Status,
+		&i.TableID,
+		&i.CreatedAt,
+		&i.CompletedAt,
+	)
+	return i, err
 }
