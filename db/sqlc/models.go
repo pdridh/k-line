@@ -11,12 +11,281 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type DeliveryStatus string
+
+const (
+	DeliveryStatusPending    DeliveryStatus = "pending"
+	DeliveryStatusPreparing  DeliveryStatus = "preparing"
+	DeliveryStatusReady      DeliveryStatus = "ready"
+	DeliveryStatusDispatched DeliveryStatus = "dispatched"
+	DeliveryStatusDelivered  DeliveryStatus = "delivered"
+	DeliveryStatusFailed     DeliveryStatus = "failed"
+	DeliveryStatusCancelled  DeliveryStatus = "cancelled"
+)
+
+func (e *DeliveryStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = DeliveryStatus(s)
+	case string:
+		*e = DeliveryStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for DeliveryStatus: %T", src)
+	}
+	return nil
+}
+
+type NullDeliveryStatus struct {
+	DeliveryStatus DeliveryStatus
+	Valid          bool // Valid is true if DeliveryStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullDeliveryStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.DeliveryStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.DeliveryStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullDeliveryStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.DeliveryStatus), nil
+}
+
+type OrderItemStatus string
+
+const (
+	OrderItemStatusPending   OrderItemStatus = "pending"
+	OrderItemStatusPreparing OrderItemStatus = "preparing"
+	OrderItemStatusReady     OrderItemStatus = "ready"
+	OrderItemStatusServed    OrderItemStatus = "served"
+	OrderItemStatusDelivered OrderItemStatus = "delivered"
+	OrderItemStatusCancelled OrderItemStatus = "cancelled"
+)
+
+func (e *OrderItemStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderItemStatus(s)
+	case string:
+		*e = OrderItemStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderItemStatus: %T", src)
+	}
+	return nil
+}
+
+type NullOrderItemStatus struct {
+	OrderItemStatus OrderItemStatus
+	Valid           bool // Valid is true if OrderItemStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderItemStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderItemStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderItemStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderItemStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderItemStatus), nil
+}
+
+type OrderStatus string
+
+const (
+	OrderStatusOngoing   OrderStatus = "ongoing"
+	OrderStatusCompleted OrderStatus = "completed"
+	OrderStatusCancelled OrderStatus = "cancelled"
+)
+
+func (e *OrderStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderStatus(s)
+	case string:
+		*e = OrderStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderStatus: %T", src)
+	}
+	return nil
+}
+
+type NullOrderStatus struct {
+	OrderStatus OrderStatus
+	Valid       bool // Valid is true if OrderStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderStatus), nil
+}
+
+type OrderType string
+
+const (
+	OrderTypeDining   OrderType = "dining"
+	OrderTypeDelivery OrderType = "delivery"
+	OrderTypeTakeaway OrderType = "takeaway"
+)
+
+func (e *OrderType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderType(s)
+	case string:
+		*e = OrderType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderType: %T", src)
+	}
+	return nil
+}
+
+type NullOrderType struct {
+	OrderType OrderType
+	Valid     bool // Valid is true if OrderType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderType) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderType), nil
+}
+
+type TableStatus string
+
+const (
+	TableStatusAvailable TableStatus = "available"
+	TableStatusOccupied  TableStatus = "occupied"
+	TableStatusClosed    TableStatus = "closed"
+)
+
+func (e *TableStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TableStatus(s)
+	case string:
+		*e = TableStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TableStatus: %T", src)
+	}
+	return nil
+}
+
+type NullTableStatus struct {
+	TableStatus TableStatus
+	Valid       bool // Valid is true if TableStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTableStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.TableStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TableStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTableStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TableStatus), nil
+}
+
+type TakeawayStatus string
+
+const (
+	TakeawayStatusPending   TakeawayStatus = "pending"
+	TakeawayStatusPreparing TakeawayStatus = "preparing"
+	TakeawayStatusPickedUp  TakeawayStatus = "picked_up"
+	TakeawayStatusCancelled TakeawayStatus = "cancelled"
+	TakeawayStatusNoShow    TakeawayStatus = "no_show"
+)
+
+func (e *TakeawayStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TakeawayStatus(s)
+	case string:
+		*e = TakeawayStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TakeawayStatus: %T", src)
+	}
+	return nil
+}
+
+type NullTakeawayStatus struct {
+	TakeawayStatus TakeawayStatus
+	Valid          bool // Valid is true if TakeawayStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTakeawayStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.TakeawayStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TakeawayStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTakeawayStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TakeawayStatus), nil
+}
+
 type UserType string
 
 const (
-	UserTypeWaiter  UserType = "waiter"
-	UserTypeKitchen UserType = "kitchen"
-	UserTypeAdmin   UserType = "admin"
+	UserTypeAdmin    UserType = "admin"
+	UserTypeRegister UserType = "register"
+	UserTypeKitchen  UserType = "kitchen"
+	UserTypeWaiter   UserType = "waiter"
+	UserTypeDriver   UserType = "driver"
 )
 
 func (e *UserType) Scan(src interface{}) error {
@@ -54,6 +323,16 @@ func (ns NullUserType) Value() (driver.Value, error) {
 	return string(ns.UserType), nil
 }
 
+type DeliveryDetail struct {
+	OrderID      pgtype.UUID      `db:"order_id"`
+	Address      string           `db:"address"`
+	Contact      string           `db:"contact"`
+	DriverID     pgtype.UUID      `db:"driver_id"`
+	Status       DeliveryStatus   `db:"status"`
+	DispatchedAt pgtype.Timestamp `db:"dispatched_at"`
+	DeliveredAt  pgtype.Timestamp `db:"delivered_at"`
+}
+
 type MenuItem struct {
 	ID             int32            `db:"id"`
 	Name           string           `db:"name"`
@@ -61,6 +340,41 @@ type MenuItem struct {
 	Price          float64          `db:"price"`
 	RequiresTicket bool             `db:"requires_ticket"`
 	CreatedAt      pgtype.Timestamp `db:"created_at"`
+}
+
+type Order struct {
+	ID          pgtype.UUID      `db:"id"`
+	Type        OrderType        `db:"type"`
+	EmployeeID  pgtype.UUID      `db:"employee_id"`
+	Status      OrderStatus      `db:"status"`
+	TableID     pgtype.Text      `db:"table_id"`
+	CreatedAt   pgtype.Timestamp `db:"created_at"`
+	CompletedAt pgtype.Timestamp `db:"completed_at"`
+}
+
+type OrderItem struct {
+	ID       int64            `db:"id"`
+	OrderID  pgtype.UUID      `db:"order_id"`
+	ItemID   int32            `db:"item_id"`
+	Quantity int32            `db:"quantity"`
+	Notes    pgtype.Text      `db:"notes"`
+	Status   OrderItemStatus  `db:"status"`
+	AddedAt  pgtype.Timestamp `db:"added_at"`
+}
+
+type Table struct {
+	ID       string      `db:"id"`
+	Capacity int16       `db:"capacity"`
+	Status   TableStatus `db:"status"`
+	Notes    pgtype.Text `db:"notes"`
+}
+
+type TakeawayDetail struct {
+	OrderID  pgtype.UUID      `db:"order_id"`
+	Contact  string           `db:"contact"`
+	Status   TakeawayStatus   `db:"status"`
+	Notes    pgtype.Text      `db:"notes"`
+	PickedAt pgtype.Timestamp `db:"picked_at"`
 }
 
 type User struct {
