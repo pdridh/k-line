@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -98,6 +99,7 @@ func (h *handler) Login() http.HandlerFunc {
 				api.WriteError(w, r, http.StatusUnauthorized, "invalid credentials", nil)
 				return
 			default:
+				log.Println(err)
 				api.WriteInternalError(w, r)
 				return
 			}
@@ -106,5 +108,38 @@ func (h *handler) Login() http.HandlerFunc {
 		SetJWTCookie(w, t)
 
 		api.WriteJSON(w, r, http.StatusOK, "login succesfull")
+	}
+}
+
+func (h *handler) GetAuth() http.HandlerFunc {
+	type ResponsePayload struct {
+		UserID   string        `json:"id"`
+		UserType sqlc.UserType `json:"type"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		jCookie, err := r.Cookie("jwt")
+		if err != nil {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		j := jCookie.Value
+
+		t, err := ValidateJWT(j)
+		if err != nil {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		c, err := UserClaimsFromJWT(t)
+		if err != nil {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, ResponsePayload{
+			UserID:   c.UserID,
+			UserType: c.UserType,
+		})
 	}
 }

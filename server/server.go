@@ -13,6 +13,7 @@ import (
 	"github.com/pdridh/k-line/db/sqlc"
 	"github.com/pdridh/k-line/dining"
 	"github.com/pdridh/k-line/menu"
+	"github.com/rs/cors"
 )
 
 const (
@@ -37,6 +38,7 @@ func New(v *validator.Validate, store db.Store) *server {
 
 	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
+	mux.Handle("GET /auth/", authHandler.GetAuth())
 
 	mux.Handle("GET /menu", auth.Middleware(menuHandler.GetAllItems(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
 	mux.Handle("GET /menu/{id}", auth.Middleware(menuHandler.GetItemById(), sqlc.UserTypeWaiter, sqlc.UserTypeKitchen))
@@ -48,7 +50,12 @@ func New(v *validator.Validate, store db.Store) *server {
 
 	mux.Handle("/", http.NotFoundHandler())
 
-	var handler http.Handler = mux
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{config.Server().FrontendOrigin},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	}).Handler(mux)
 
 	h := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
