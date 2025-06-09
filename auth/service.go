@@ -69,7 +69,7 @@ func (s *service) AuthenticateUser(ctx context.Context, email string, password s
 		}
 	}
 
-	t, err := GenerateJWT(u.ID.String(), u.Type, config.Server().JWTExpiration)
+	t, err := GenerateJWT(u.ID.String(), u.Email, u.Name, u.Type, config.Server().JWTExpiration)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "jwtgen")
 	}

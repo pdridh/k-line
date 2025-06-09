@@ -11,10 +11,12 @@ import (
 
 // Generate a jwt with id and userType as the user's claims
 // Returns the token as a string.
-func GenerateJWT(id string, userType sqlc.UserType, duration time.Duration) (string, error) {
+func GenerateJWT(id string, email string, name string, userType sqlc.UserType, duration time.Duration) (string, error) {
 	claims := UserClaims{
-		UserID:   id,
-		UserType: userType,
+		UserID:    id,
+		UserEmail: email,
+		UserName:  name,
+		UserType:  userType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),

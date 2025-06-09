@@ -6,7 +6,9 @@ import (
 )
 
 type UserClaims struct {
-	UserID   string
-	UserType sqlc.UserType
+	UserID    string
+	UserEmail string
+	UserName  string
+	UserType  sqlc.UserType
 	jwt.RegisteredClaims
 }

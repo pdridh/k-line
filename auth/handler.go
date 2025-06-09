@@ -128,8 +128,10 @@ func (h *handler) Login() http.HandlerFunc {
 
 func (h *handler) GetAuth() http.HandlerFunc {
 	type ResponsePayload struct {
-		UserID   string        `json:"id"`
-		UserType sqlc.UserType `json:"type"`
+		UserID    string        `json:"id"`
+		UserEmail string        `json:"email"`
+		UserName  string        `json:"string"`
+		UserType  sqlc.UserType `json:"type"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
@@ -153,8 +155,10 @@ func (h *handler) GetAuth() http.HandlerFunc {
 		}
 
 		api.WriteJSON(w, r, http.StatusOK, ResponsePayload{
-			UserID:   c.UserID,
-			UserType: c.UserType,
+			UserID:    c.UserID,
+			UserEmail: c.UserEmail,
+			UserName:  c.UserName,
+			UserType:  c.UserType,
 		})
 	}
 }
