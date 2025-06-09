@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -78,6 +77,18 @@ func (h *handler) Login() http.HandlerFunc {
 		Password string `json:"password" validate:"required,min=8,max=32"`
 	}
 
+	type UserResponse struct {
+		ID    pgtype.UUID   `json:"id"`
+		Email string        `json:"email"`
+		Name  string        `json:"name"`
+		Type  sqlc.UserType `json:"type"`
+	}
+
+	type ResponsePayload struct {
+		Message string       `json:"message"`
+		User    UserResponse `json:"user"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p RequestPayload
 
@@ -92,14 +103,13 @@ func (h *handler) Login() http.HandlerFunc {
 			return
 		}
 
-		t, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
+		t, u, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
 		if err != nil {
-			switch err {
-			case ErrUnknownEmail, ErrWrongPassword:
+			switch {
+			case errors.Is(err, ErrUnknownEmail), errors.Is(err, ErrWrongPassword):
 				api.WriteError(w, r, http.StatusUnauthorized, "invalid credentials", nil)
 				return
 			default:
-				log.Println(err)
 				api.WriteInternalError(w, r)
 				return
 			}
@@ -107,7 +117,12 @@ func (h *handler) Login() http.HandlerFunc {
 
 		SetJWTCookie(w, t)
 
-		api.WriteJSON(w, r, http.StatusOK, "login succesfull")
+		api.WriteJSON(w, r, http.StatusOK, ResponsePayload{Message: "Login succesfull!", User: UserResponse{
+			ID:    u.ID,
+			Email: u.Email,
+			Name:  u.Name,
+			Type:  u.Type,
+		}})
 	}
 }
 
