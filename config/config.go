@@ -9,12 +9,13 @@ import (
 )
 
 type ServerConfig struct {
-	Env           string
-	Host          string
-	Port          string
-	DatabaseURI   string
-	JWTSecret     string
-	JWTExpiration time.Duration
+	Env            string
+	Host           string
+	Port           string
+	DatabaseURI    string
+	JWTSecret      string
+	JWTExpiration  time.Duration
+	FrontendOrigin string
 }
 
 var server *ServerConfig
@@ -35,12 +36,13 @@ func Load() {
 		}
 	}
 	server = &ServerConfig{
-		Env:           env,
-		Host:          getEnvOrDefault("HOST", "localhost"),
-		Port:          getEnvOrDefault("PORT", "8080"),
-		DatabaseURI:   getEnvOrDefault("DATABASE_URI", ""),
-		JWTSecret:     getEnvOrDefault("JWT_SECRET", "secret:)"),
-		JWTExpiration: time.Hour * 24, // TODO change this to something better
+		Env:            env,
+		Host:           getEnvOrDefault("HOST", "localhost"),
+		Port:           getEnvOrDefault("PORT", "8080"),
+		DatabaseURI:    getEnvOrDefault("DATABASE_URI", ""),
+		JWTSecret:      getEnvOrDefault("JWT_SECRET", "secret:)"),
+		JWTExpiration:  time.Hour * 24, // TODO change this to something better
+		FrontendOrigin: getEnvOrDefault("FRONTEND_ORIGIN", "http://localhost:5173"),
 	}
 }
 

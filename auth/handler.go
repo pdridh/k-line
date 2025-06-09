@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -98,6 +99,7 @@ func (h *handler) Login() http.HandlerFunc {
 				api.WriteError(w, r, http.StatusUnauthorized, "invalid credentials", nil)
 				return
 			default:
+				log.Println(err)
 				api.WriteInternalError(w, r)
 				return
 			}
