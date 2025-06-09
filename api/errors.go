@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -41,7 +42,7 @@ func FormatValidationErrors(err error) []ValidationError {
 
 	if ve, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range ve {
-			field := e.Field()
+			field := strings.ToLower(e.Field())
 			tag := e.Tag()
 
 			res = append(res, NewValidationError(tag, field))

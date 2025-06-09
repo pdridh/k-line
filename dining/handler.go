@@ -138,8 +138,7 @@ func (h *handler) UpdateOrderItem() http.HandlerFunc {
 
 		if err := h.Service.UpdateOrderItem(r.Context(), orderID, itemID, p.Status); err != nil {
 			switch {
-			case errors.Is(err, ErrUnknownOrder):
-			case errors.Is(err, ErrUnkownOrderItem):
+			case errors.Is(err, ErrUnknownOrder), errors.Is(err, ErrUnkownOrderItem):
 				api.WriteNotFoundError(w, r)
 				return
 			case errors.Is(err, ErrOrderNotOngoing):

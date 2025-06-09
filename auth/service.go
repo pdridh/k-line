@@ -50,29 +50,29 @@ func (s *service) CreateUser(ctx context.Context, email string, name string, use
 	return u, nil
 }
 
-func (s *service) AuthenticateUser(ctx context.Context, email string, password string) (string, error) {
+func (s *service) AuthenticateUser(ctx context.Context, email string, password string) (string, *sqlc.User, error) {
 	u, err := s.Store.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return "", errors.Wrap(ErrUnknownEmail, "store")
+			return "", nil, errors.Wrap(ErrUnknownEmail, "store")
 		}
-		return "", errors.Wrap(err, "store")
+		return "", nil, errors.Wrap(err, "store")
 	}
 
 	// Check if the password is correct
 	if err := CompareHashedPasswords(u.Password, password); err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
-			return "", ErrWrongPassword
+			return "", nil, ErrWrongPassword
 		default:
-			return "", err
+			return "", nil, err
 		}
 	}
 
-	t, err := GenerateJWT(u.ID.String(), u.Type, config.Server().JWTExpiration)
+	t, err := GenerateJWT(u.ID.String(), u.Email, u.Name, u.Type, config.Server().JWTExpiration)
 	if err != nil {
-		return "", errors.Wrap(err, "jwtgen")
+		return "", nil, errors.Wrap(err, "jwtgen")
 	}
 
-	return t, nil
+	return t, &u, nil
 }
