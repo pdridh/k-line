@@ -49,8 +49,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 		}
 
 		if err := h.Validate.Struct(payload); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
@@ -64,7 +63,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 		if err != nil {
 			errCode := db.GetSQLErrorCode(err)
 			if errCode == db.UniqueViolation {
-				api.WriteError(w, r, http.StatusConflict, "item with the same name already exists", nil)
+				api.WriteError(w, r, http.StatusConflict, api.ErrItemNameConflict, nil)
 				return
 			}
 			api.WriteInternalError(w, r)

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/db"
 	"github.com/pdridh/k-line/db/sqlc"
@@ -43,7 +44,7 @@ func (s *service) CreateUser(ctx context.Context, email string, name string, use
 	if err != nil {
 		errCode := db.GetSQLErrorCode(err)
 		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
-			return u, errors.Wrap(ErrEmailAlreadyExists, "store")
+			return u, errors.Wrap(api.ErrEmailAlreadyExists.Error, "store")
 		}
 	}
 
@@ -54,7 +55,7 @@ func (s *service) AuthenticateUser(ctx context.Context, email string, password s
 	u, err := s.Store.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return "", nil, errors.Wrap(ErrUnknownEmail, "store")
+			return "", nil, errors.Wrap(api.ErrUnknownOrder.Error, "store")
 		}
 		return "", nil, errors.Wrap(err, "store")
 	}
@@ -63,9 +64,9 @@ func (s *service) AuthenticateUser(ctx context.Context, email string, password s
 	if err := CompareHashedPasswords(u.Password, password); err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
-			return "", nil, ErrWrongPassword
+			return "", nil, errors.Wrap(api.ErrWrongPassword.Error, "hash")
 		default:
-			return "", nil, err
+			return "", nil, errors.Wrap(err, "hash")
 		}
 	}
 

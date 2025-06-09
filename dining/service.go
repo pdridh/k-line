@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/db"
 	"github.com/pdridh/k-line/db/sqlc"
 	"github.com/pkg/errors"
@@ -27,14 +28,14 @@ func (s *service) CreateOrder(ctx context.Context, tableID pgtype.Text, employee
 	t, err := s.store.GetTableByID(ctx, tableID.String)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return nil, errors.Wrap(ErrUnknownTable, "store")
+			return nil, errors.Wrap(api.ErrUnknownTable.Error, "store")
 		}
 		return nil, errors.Wrap(err, "store")
 	}
 
 	// Check if the table is available
 	if t.Status != sqlc.TableStatusAvailable {
-		return nil, errors.Wrap(ErrTableNotAvaliable, "store")
+		return nil, errors.Wrap(api.ErrTableNotAvaliable.Error, "store")
 	}
 
 	return s.store.CreateDiningOrderTx(ctx, tableID, employeeID)
@@ -55,13 +56,13 @@ func (s *service) AddItemsToOrder(ctx context.Context, orderID pgtype.UUID, item
 	ongoing, err := s.IsOngoingOrder(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return errors.Wrap(ErrUnknownOrder, "store")
+			return errors.Wrap(api.ErrUnknownOrder.Error, "store")
 		}
 		return errors.Wrap(err, "store")
 	}
 
 	if !ongoing {
-		return errors.Wrap(ErrOrderNotOngoing, "store")
+		return errors.Wrap(api.ErrOrderNotOngoing.Error, "store")
 	}
 
 	var arg sqlc.AddOrderItemsBulkParams
@@ -85,13 +86,13 @@ func (s *service) UpdateOrderItem(ctx context.Context, orderID pgtype.UUID, orde
 	ongoing, err := s.IsOngoingOrder(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return errors.Wrap(ErrUnknownOrder, "store")
+			return errors.Wrap(api.ErrUnknownOrder.Error, "store")
 		}
 		return errors.Wrap(err, "store")
 	}
 
 	if !ongoing {
-		return errors.Wrap(ErrOrderNotOngoing, "store")
+		return errors.Wrap(api.ErrOrderNotOngoing.Error, "store")
 	}
 
 	// Check if the order contains the order item
@@ -99,7 +100,7 @@ func (s *service) UpdateOrderItem(ctx context.Context, orderID pgtype.UUID, orde
 	_, err = s.store.GetOrderItemByID(ctx, sqlc.GetOrderItemByIDParams{ID: int64(orderItemID), OrderID: orderID})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return errors.Wrap(ErrUnkownOrderItem, "store")
+			return errors.Wrap(api.ErrUnknownOrderItem.Error, "store")
 		}
 		return errors.Wrap(err, "store")
 	}

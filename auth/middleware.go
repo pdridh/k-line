@@ -16,7 +16,8 @@ func Middleware(next http.HandlerFunc, allowedTypes ...sqlc.UserType) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
@@ -24,13 +25,13 @@ func Middleware(next http.HandlerFunc, allowedTypes ...sqlc.UserType) http.Handl
 
 		t, err := ValidateJWT(j)
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
 		c, err := UserClaimsFromJWT(t)
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
@@ -40,6 +41,6 @@ func Middleware(next http.HandlerFunc, allowedTypes ...sqlc.UserType) http.Handl
 			return
 		}
 
-		api.WriteError(w, r, http.StatusForbidden, "not allowed to use this route", nil)
+		api.WriteError(w, r, http.StatusForbidden, api.ErrHTTPForbidden, nil)
 	}
 }

@@ -43,14 +43,13 @@ func (h *handler) Register() http.HandlerFunc {
 		}
 
 		if err := h.Service.Validate.Struct(p); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
 		u, err := h.Service.CreateUser(r.Context(), p.Email, p.Name, p.Type, p.Password)
-		if errors.Is(err, ErrEmailAlreadyExists) {
-			api.WriteError(w, r, http.StatusConflict, "cannot use this email", nil)
+		if errors.Is(err, api.ErrEmailAlreadyExists.Error) {
+			api.WriteError(w, r, http.StatusConflict, api.ErrRegistrationFailed, nil)
 			return
 		}
 
@@ -98,16 +97,15 @@ func (h *handler) Login() http.HandlerFunc {
 		}
 
 		if err := h.Service.Validate.Struct(p); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
 		t, u, err := h.Service.AuthenticateUser(r.Context(), p.Email, p.Password)
 		if err != nil {
 			switch {
-			case errors.Is(err, ErrUnknownEmail), errors.Is(err, ErrWrongPassword):
-				api.WriteError(w, r, http.StatusUnauthorized, "invalid credentials", nil)
+			case errors.Is(err, api.ErrUnknownEmail.Error), errors.Is(err, api.ErrWrongPassword.Error):
+				api.WriteError(w, r, http.StatusUnauthorized, api.ErrLoginInvalid, nil)
 				return
 			default:
 				api.WriteInternalError(w, r)
@@ -136,7 +134,7 @@ func (h *handler) GetAuth() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
@@ -144,13 +142,13 @@ func (h *handler) GetAuth() http.HandlerFunc {
 
 		t, err := ValidateJWT(j)
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
 		c, err := UserClaimsFromJWT(t)
 		if err != nil {
-			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			api.WriteInvalidJWTError(w, r)
 			return
 		}
 
