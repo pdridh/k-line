@@ -30,7 +30,11 @@ func main() {
 
 	pool, err := pgxpool.New(ctx, uri)
 	if err != nil {
-		log.Fatalln("cannot connect to db", err)
+		log.Fatalln("cannot create connection pool", err)
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatalln("cannot connect to db:", err)
 	}
 
 	store := db.NewPSQLStore(pool)
