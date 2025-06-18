@@ -55,7 +55,7 @@ func (s *service) AuthenticateUser(ctx context.Context, email string, password s
 	u, err := s.Store.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			return "", nil, errors.Wrap(api.ErrUnknownOrder.Error, "store")
+			return "", nil, errors.Wrap(api.ErrUnknownEmail.Error, "store")
 		}
 		return "", nil, errors.Wrap(err, "store")
 	}
