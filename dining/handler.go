@@ -61,7 +61,7 @@ func (h *handler) CreateOrder() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, map[string]any{"order": o})
+		api.WriteSuccess(w, r, http.StatusCreated, "Order created succefully", o)
 	}
 
 }
@@ -108,7 +108,7 @@ func (h *handler) AddOrderItem() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, p)
+		api.WriteSuccess(w, r, http.StatusCreated, "Succesfully added item to order", nil)
 	}
 }
 
@@ -159,7 +159,7 @@ func (h *handler) UpdateOrderItem() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, nil)
+		api.WriteSuccess(w, r, http.StatusOK, "Succefully updated order item status", nil)
 	}
 
 }

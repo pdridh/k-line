@@ -66,7 +66,7 @@ func (h *handler) Register() http.HandlerFunc {
 			CreatedAt: u.CreatedAt,
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, res)
+		api.WriteSuccess(w, r, http.StatusCreated, "Successfully registered", res)
 	}
 }
 
@@ -81,11 +81,6 @@ func (h *handler) Login() http.HandlerFunc {
 		Email string        `json:"email"`
 		Name  string        `json:"name"`
 		Type  sqlc.UserType `json:"type"`
-	}
-
-	type ResponsePayload struct {
-		Message string       `json:"message"`
-		User    UserResponse `json:"user"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -115,12 +110,12 @@ func (h *handler) Login() http.HandlerFunc {
 
 		SetJWTCookie(w, t)
 
-		api.WriteJSON(w, r, http.StatusOK, ResponsePayload{Message: "Login succesfull!", User: UserResponse{
+		api.WriteSuccess(w, r, http.StatusOK, "Login successful", UserResponse{
 			ID:    u.ID,
 			Email: u.Email,
 			Name:  u.Name,
 			Type:  u.Type,
-		}})
+		})
 	}
 }
 
@@ -152,7 +147,7 @@ func (h *handler) GetAuth() http.HandlerFunc {
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, ResponsePayload{
+		api.WriteSuccess(w, r, http.StatusOK, "Auth is valid", ResponsePayload{
 			UserID:    c.UserID,
 			UserEmail: c.UserEmail,
 			UserName:  c.UserName,

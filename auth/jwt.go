@@ -59,7 +59,7 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 }
 
 // Given a token extracts the claims as UserClaims and returns the claims
-// Returns error if extraction was not succesful.
+// Returns error if extraction was not successful.
 func UserClaimsFromJWT(t *jwt.Token) (*UserClaims, error) {
 	c, ok := t.Claims.(*UserClaims)
 	if !ok {

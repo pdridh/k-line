@@ -34,6 +34,14 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, v any) error 
 	return nil
 }
 
+func WriteSuccess(w http.ResponseWriter, r *http.Request, status int, message string, data any) {
+	s := NewSuccessResponse(status, message, data)
+
+	if err := WriteJSON(w, r, status, s); err != nil {
+		log.Println("failed to write to request")
+	}
+}
+
 // Utility function that turns the given status, message and errors into an object ErrorResponse
 // Which is used as a json response.
 func WriteError(w http.ResponseWriter, r *http.Request, status int, apiErr APIError, errors any) {

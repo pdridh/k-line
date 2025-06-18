@@ -78,7 +78,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 			CreatedAt:   i.CreatedAt,
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, res)
+		api.WriteSuccess(w, r, http.StatusCreated, "Created new menu item", res)
 	}
 
 }
@@ -103,8 +103,7 @@ func (h *handler) GetAllItems() http.HandlerFunc {
 			return
 		}
 
-		// TODO dont expose db models, make a response object
-		api.WriteJSON(w, r, http.StatusOK, i)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", i)
 	}
 }
 
@@ -147,6 +146,6 @@ func (h *handler) GetItemById() http.HandlerFunc {
 			CreatedAt:   i.CreatedAt,
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, res)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", res)
 	}
 }
