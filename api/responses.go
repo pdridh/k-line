@@ -34,10 +34,18 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, v any) error 
 	return nil
 }
 
+func WriteSuccess(w http.ResponseWriter, r *http.Request, status int, message string, data any) {
+	s := NewSuccessResponse(status, message, data)
+
+	if err := WriteJSON(w, r, status, s); err != nil {
+		log.Println("failed to write to request")
+	}
+}
+
 // Utility function that turns the given status, message and errors into an object ErrorResponse
 // Which is used as a json response.
-func WriteError(w http.ResponseWriter, r *http.Request, status int, message string, errors any) {
-	e := NewErrorResponse(status, message, errors)
+func WriteError(w http.ResponseWriter, r *http.Request, status int, apiErr APIError, errors any) {
+	e := NewErrorResponse(status, apiErr.Code, apiErr.Message, errors)
 
 	if err := WriteJSON(w, r, status, e); err != nil {
 		log.Println("failed to write to request")
@@ -48,15 +56,28 @@ func WriteError(w http.ResponseWriter, r *http.Request, status int, message stri
 
 // Helper that calls WriteError() with args for an internal server error
 func WriteInternalError(w http.ResponseWriter, r *http.Request) {
-	WriteError(w, r, http.StatusInternalServerError, "Internal server error :(", nil)
+	WriteError(w, r, http.StatusInternalServerError, ErrHTTPInternal, nil)
 }
 
 // Helper that calls WriteError() with args for a bad request error
 func WriteBadRequestError(w http.ResponseWriter, r *http.Request) {
-	WriteError(w, r, http.StatusBadRequest, "Bad request", nil)
+	WriteError(w, r, http.StatusBadRequest, ErrHTTPBadRequest, nil)
 }
 
 // Helper that calls WriteError() with args for a resource not found error
 func WriteNotFoundError(w http.ResponseWriter, r *http.Request) {
-	WriteError(w, r, http.StatusNotFound, "Resource Not Found", nil)
+	WriteError(w, r, http.StatusNotFound, ErrHTTPNotFound, nil)
+}
+
+func WriteInvalidJWTError(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, http.StatusUnauthorized, ErrJWTInvalid, nil)
+}
+
+func WriteForbiddenError(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, http.StatusForbidden, ErrHTTPForbidden, nil)
+}
+
+func WriteValidationError(w http.ResponseWriter, r *http.Request, err error) {
+	v := FormatValidationErrors(err)
+	WriteError(w, r, http.StatusBadRequest, ErrJSONValidation, v)
 }

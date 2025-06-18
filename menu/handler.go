@@ -49,8 +49,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 		}
 
 		if err := h.Validate.Struct(payload); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
@@ -64,7 +63,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 		if err != nil {
 			errCode := db.GetSQLErrorCode(err)
 			if errCode == db.UniqueViolation {
-				api.WriteError(w, r, http.StatusConflict, "item with the same name already exists", nil)
+				api.WriteError(w, r, http.StatusConflict, api.ErrItemNameConflict, nil)
 				return
 			}
 			api.WriteInternalError(w, r)
@@ -79,7 +78,7 @@ func (h *handler) CreateItem() http.HandlerFunc {
 			CreatedAt:   i.CreatedAt,
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, res)
+		api.WriteSuccess(w, r, http.StatusCreated, "Created new menu item", res)
 	}
 
 }
@@ -104,8 +103,7 @@ func (h *handler) GetAllItems() http.HandlerFunc {
 			return
 		}
 
-		// TODO dont expose db models, make a response object
-		api.WriteJSON(w, r, http.StatusOK, i)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", i)
 	}
 }
 
@@ -148,6 +146,6 @@ func (h *handler) GetItemById() http.HandlerFunc {
 			CreatedAt:   i.CreatedAt,
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, res)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", res)
 	}
 }

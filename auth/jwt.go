@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pdridh/k-line/api"
 	"github.com/pdridh/k-line/config"
 	"github.com/pdridh/k-line/db/sqlc"
 )
@@ -34,7 +35,7 @@ func ValidateJWT(tokenString string) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (any, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, ErrUnexpectedJWTSigningMethod
+			return nil, api.ErrUnexpectedJWTSigningMethod.Error
 		}
 
 		return []byte(config.Server().JWTSecret), nil
@@ -58,7 +59,7 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 }
 
 // Given a token extracts the claims as UserClaims and returns the claims
-// Returns error if extraction was not succesful.
+// Returns error if extraction was not successful.
 func UserClaimsFromJWT(t *jwt.Token) (*UserClaims, error) {
 	c, ok := t.Claims.(*UserClaims)
 	if !ok {

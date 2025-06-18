@@ -37,8 +37,7 @@ func (h *handler) CreateOrder() http.HandlerFunc {
 		}
 
 		if err := h.Service.Validate.Struct(p); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
@@ -50,11 +49,11 @@ func (h *handler) CreateOrder() http.HandlerFunc {
 		o, err := h.Service.CreateOrder(r.Context(), p.TableID, userID)
 		if err != nil {
 			switch {
-			case errors.Is(err, ErrUnknownTable):
+			case errors.Is(err, api.ErrUnknownTable.Error):
 				api.WriteNotFoundError(w, r)
 				return
-			case errors.Is(err, ErrTableNotAvaliable):
-				api.WriteError(w, r, http.StatusConflict, "table is not available", nil)
+			case errors.Is(err, api.ErrTableNotAvaliable.Error):
+				api.WriteError(w, r, http.StatusConflict, api.ErrTableNotAvaliable, nil)
 				return
 			default:
 				api.WriteInternalError(w, r)
@@ -62,7 +61,7 @@ func (h *handler) CreateOrder() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusCreated, map[string]any{"order": o})
+		api.WriteSuccess(w, r, http.StatusCreated, "Order created succefully", o)
 	}
 
 }
@@ -91,14 +90,25 @@ func (h *handler) AddOrderItem() http.HandlerFunc {
 		}
 
 		if err := h.Service.Validate.Struct(p); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
-		h.Service.AddItemsToOrder(r.Context(), id, p.Items)
+		if err := h.Service.AddItemsToOrder(r.Context(), id, p.Items); err != nil {
+			switch {
+			case errors.Is(err, api.ErrUnknownOrder.Error):
+				api.WriteNotFoundError(w, r)
+				return
+			case errors.Is(err, api.ErrOrderNotOngoing.Error):
+				api.WriteError(w, r, http.StatusConflict, api.ErrOrderNotOngoing, nil)
+				return
+			default:
+				api.WriteInternalError(w, r)
+				return
+			}
+		}
 
-		api.WriteJSON(w, r, http.StatusCreated, p)
+		api.WriteSuccess(w, r, http.StatusCreated, "Succesfully added item to order", nil)
 	}
 }
 
@@ -131,18 +141,17 @@ func (h *handler) UpdateOrderItem() http.HandlerFunc {
 		}
 
 		if err := h.Service.Validate.Struct(p); err != nil {
-			v := api.FormatValidationErrors(err)
-			api.WriteError(w, r, http.StatusBadRequest, "Validation errors", v)
+			api.WriteValidationError(w, r, err)
 			return
 		}
 
 		if err := h.Service.UpdateOrderItem(r.Context(), orderID, itemID, p.Status); err != nil {
 			switch {
-			case errors.Is(err, ErrUnknownOrder), errors.Is(err, ErrUnkownOrderItem):
+			case errors.Is(err, api.ErrUnknownOrder.Error), errors.Is(err, api.ErrUnknownOrderItem.Error):
 				api.WriteNotFoundError(w, r)
 				return
-			case errors.Is(err, ErrOrderNotOngoing):
-				api.WriteError(w, r, http.StatusConflict, "order is not ongoing", nil)
+			case errors.Is(err, api.ErrOrderNotOngoing.Error):
+				api.WriteError(w, r, http.StatusConflict, api.ErrOrderNotOngoing, nil)
 				return
 			default:
 				api.WriteInternalError(w, r)
@@ -150,7 +159,7 @@ func (h *handler) UpdateOrderItem() http.HandlerFunc {
 			}
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, nil)
+		api.WriteSuccess(w, r, http.StatusOK, "Succefully updated order item status", nil)
 	}
 
 }
