@@ -114,14 +114,25 @@ func (s *service) UpdateOrderItem(ctx context.Context, orderID pgtype.UUID, orde
 	return s.store.UpdateOrderItemStatus(ctx, arg)
 }
 
-func (s *service) GetTables(ctx context.Context, status sqlc.TableStatus) ([]sqlc.Table, error) {
+func (s *service) GetTables(ctx context.Context, status sqlc.TableStatus) ([]Table, error) {
 	t, err := s.store.GetTables(ctx, status)
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			return []sqlc.Table{}, nil
-		}
-		return []sqlc.Table{}, errors.Wrap(err, "store")
+		return []Table{}, errors.Wrap(err, "store")
 	}
 
-	return t, nil
+	if len(t) == 0 {
+		return []Table{}, nil
+	}
+
+	var tables []Table
+	for _, table := range t {
+		tables = append(tables, Table{
+			ID:       table.ID,
+			Capacity: table.Capacity,
+			Status:   table.Status,
+			Notes:    table.Notes,
+		})
+	}
+
+	return tables, nil
 }
