@@ -42,6 +42,7 @@ var (
 	ErrOrderNotOngoing            = NewError("ERR_ORDER_NOTONGOING", "order is not ongoing")
 	ErrUnknownOrderItem           = NewError("ERR_ORDER_UNKNOWNITEM", "order item does not exist")
 	ErrItemNameConflict           = NewError("ERR_MENU_ITEMNAME_CONFLICT", "menu item with the same name already exists")
+	ErrUnkownMenuItem             = NewError("ERR_MENU_ITEM_UNKOWN", "menu item with this id doesnt exist")
 )
 
 type ErrorResponse struct {

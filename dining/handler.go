@@ -169,13 +169,6 @@ func (h *handler) GetTables() http.HandlerFunc {
 		Status sqlc.TableStatus `json:"status" validate:"required,oneof=available occupied closed"`
 	}
 
-	type ResponsePayload struct {
-		ID       string           `json:"id"`
-		Capacity int16            `json:"capacity"`
-		Status   sqlc.TableStatus `json:"status"`
-		Notes    pgtype.Text      `json:"notes"`
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p QueryParams
 
@@ -192,17 +185,6 @@ func (h *handler) GetTables() http.HandlerFunc {
 			return
 		}
 
-		var tableRes []ResponsePayload
-
-		for _, table := range t {
-			tableRes = append(tableRes, ResponsePayload{
-				ID:       table.ID,
-				Capacity: table.Capacity,
-				Status:   table.Status,
-				Notes:    table.Notes,
-			})
-		}
-
-		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", tableRes)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", t)
 	}
 }
