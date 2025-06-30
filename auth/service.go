@@ -25,12 +25,12 @@ func NewService(v *validator.Validate, u db.Store) *service {
 	}
 }
 
-func (s *service) CreateUser(ctx context.Context, email string, name string, userType sqlc.UserType, password string) (sqlc.User, error) {
+func (s *service) CreateUser(ctx context.Context, email string, name string, userType sqlc.UserType, password string) (*User, error) {
 	// Hash password
 	var u sqlc.User
 	hashedPassword, err := HashPassword(password)
 	if err != nil {
-		return u, errors.Wrap(err, "hash")
+		return nil, errors.Wrap(err, "hash")
 	}
 
 	arg := sqlc.CreateUserParams{
@@ -44,14 +44,22 @@ func (s *service) CreateUser(ctx context.Context, email string, name string, use
 	if err != nil {
 		errCode := db.GetSQLErrorCode(err)
 		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
-			return u, errors.Wrap(api.ErrEmailAlreadyExists.Error, "store")
+			return nil, errors.Wrap(api.ErrEmailAlreadyExists.Error, "store")
 		}
 	}
 
-	return u, nil
+	user := &User{
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      u.Name,
+		Type:      u.Type,
+		CreatedAt: u.CreatedAt,
+	}
+
+	return user, nil
 }
 
-func (s *service) AuthenticateUser(ctx context.Context, email string, password string) (string, *sqlc.User, error) {
+func (s *service) AuthenticateUser(ctx context.Context, email string, password string) (string, *User, error) {
 	u, err := s.Store.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
@@ -75,5 +83,13 @@ func (s *service) AuthenticateUser(ctx context.Context, email string, password s
 		return "", nil, errors.Wrap(err, "jwtgen")
 	}
 
-	return t, &u, nil
+	user := &User{
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      u.Name,
+		Type:      u.Type,
+		CreatedAt: u.CreatedAt,
+	}
+
+	return t, user, nil
 }
