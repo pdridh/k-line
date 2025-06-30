@@ -9,3 +9,7 @@ SET status = $1
 WHERE id = $2;
 
 
+-- name: GetTables :many
+SELECT * FROM tables
+WHERE status = $1;
+

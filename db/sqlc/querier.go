@@ -20,6 +20,7 @@ type Querier interface {
 	GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error)
 	GetOrderItemByID(ctx context.Context, arg GetOrderItemByIDParams) (OrderItem, error)
 	GetTableByID(ctx context.Context, id string) (Table, error)
+	GetTables(ctx context.Context, status TableStatus) ([]Table, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUsers(ctx context.Context, arg GetUsersParams) ([]User, error)
 	UpdateOrderItemStatus(ctx context.Context, arg UpdateOrderItemStatusParams) error

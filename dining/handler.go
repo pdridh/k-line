@@ -163,3 +163,46 @@ func (h *handler) UpdateOrderItem() http.HandlerFunc {
 	}
 
 }
+
+func (h *handler) GetTables() http.HandlerFunc {
+	type QueryParams struct {
+		Status sqlc.TableStatus `json:"status" validate:"required,oneof=available occupied closed"`
+	}
+
+	type ResponsePayload struct {
+		ID       string           `json:"id"`
+		Capacity int16            `json:"capacity"`
+		Status   sqlc.TableStatus `json:"status"`
+		Notes    pgtype.Text      `json:"notes"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var p QueryParams
+
+		api.ParseQueryParams(r.URL.Query(), &p)
+
+		if err := h.Service.Validate.Struct(p); err != nil {
+			api.WriteValidationError(w, r, err)
+			return
+		}
+
+		t, err := h.Service.GetTables(r.Context(), p.Status)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		var tableRes []ResponsePayload
+
+		for _, table := range t {
+			tableRes = append(tableRes, ResponsePayload{
+				ID:       table.ID,
+				Capacity: table.Capacity,
+				Status:   table.Status,
+				Notes:    table.Notes,
+			})
+		}
+
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", tableRes)
+	}
+}

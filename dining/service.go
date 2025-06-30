@@ -113,3 +113,15 @@ func (s *service) UpdateOrderItem(ctx context.Context, orderID pgtype.UUID, orde
 
 	return s.store.UpdateOrderItemStatus(ctx, arg)
 }
+
+func (s *service) GetTables(ctx context.Context, status sqlc.TableStatus) ([]sqlc.Table, error) {
+	t, err := s.store.GetTables(ctx, status)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return []sqlc.Table{}, nil
+		}
+		return []sqlc.Table{}, errors.Wrap(err, "store")
+	}
+
+	return t, nil
+}

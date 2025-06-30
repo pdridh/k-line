@@ -26,6 +26,36 @@ func (q *Queries) GetTableByID(ctx context.Context, id string) (Table, error) {
 	return i, err
 }
 
+const getTables = `-- name: GetTables :many
+SELECT id, capacity, status, notes FROM tables
+WHERE status = $1
+`
+
+func (q *Queries) GetTables(ctx context.Context, status TableStatus) ([]Table, error) {
+	rows, err := q.db.Query(ctx, getTables, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Table
+	for rows.Next() {
+		var i Table
+		if err := rows.Scan(
+			&i.ID,
+			&i.Capacity,
+			&i.Status,
+			&i.Notes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateTableStatus = `-- name: UpdateTableStatus :exec
 UPDATE tables
 SET status = $1
