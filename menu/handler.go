@@ -84,6 +84,15 @@ func (h *handler) CreateItem() http.HandlerFunc {
 }
 
 func (h *handler) GetAllItems() http.HandlerFunc {
+
+	type ResponsePayload struct {
+		ID          int32            `json:"id"`
+		Name        string           `json:"name"`
+		Description pgtype.Text      `json:"description"`
+		Price       float64          `json:"price"`
+		CreatedAt   pgtype.Timestamp `json:"created_at"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		var filters MenuFilters
 
@@ -103,7 +112,19 @@ func (h *handler) GetAllItems() http.HandlerFunc {
 			return
 		}
 
-		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", i)
+		var itemsRes []ResponsePayload
+
+		for _, item := range i {
+			itemsRes = append(itemsRes, ResponsePayload{
+				ID:          item.ID,
+				Name:        item.Name,
+				Description: item.Description,
+				Price:       item.Price,
+				CreatedAt:   item.CreatedAt,
+			})
+		}
+
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", itemsRes)
 	}
 }
 
