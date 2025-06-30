@@ -31,7 +31,8 @@ func New(v *validator.Validate, store db.Store) *server {
 	authService := auth.NewService(v, store)
 	authHandler := auth.NewHandler(authService)
 
-	menuHandler := menu.NewHandler(v, store)
+	menuService := menu.NewService(v, store)
+	menuHandler := menu.NewHandler(menuService)
 
 	diningService := dining.NewService(v, store)
 	diningHandler := dining.NewHandler(diningService)
