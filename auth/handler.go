@@ -129,6 +129,13 @@ func (h *handler) GetAuth() http.HandlerFunc {
 			return
 		}
 
-		api.WriteSuccess(w, r, http.StatusOK, "Auth is valid", c)
+		auth := UserAuth{
+			ID:    c.ID,
+			Email: c.UserEmail,
+			Name:  c.UserName,
+			Type:  c.UserType,
+		}
+
+		api.WriteSuccess(w, r, http.StatusOK, "Auth is valid", auth)
 	}
 }

@@ -19,5 +19,12 @@ type User struct {
 	Email     string           `json:"email"`
 	Name      string           `json:"name"`
 	Type      sqlc.UserType    `json:"type"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
+	CreatedAt pgtype.Timestamp `json:"created_at,omitempty"`
+}
+
+type UserAuth struct {
+	ID    string        `json:"id"`
+	Email string        `json:"email"`
+	Name  string        `json:"name"`
+	Type  sqlc.UserType `json:"type"`
 }
