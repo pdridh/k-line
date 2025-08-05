@@ -136,3 +136,29 @@ func (s *service) GetTables(ctx context.Context, status sqlc.TableStatus) ([]Tab
 
 	return tables, nil
 }
+
+func (s *service) GetOrders(ctx context.Context, status sqlc.OrderStatus, orderType sqlc.OrderType) ([]Order, error) {
+	o, err := s.store.GetOrders(ctx, sqlc.GetOrdersParams{Status: status, Type: orderType})
+	if err != nil {
+		return []Order{}, errors.Wrap(err, "store")
+	}
+
+	if len(o) == 0 {
+		return []Order{}, nil
+	}
+
+	var orders []Order
+	for _, order := range o {
+		orders = append(orders, Order{
+			ID:          order.ID,
+			Type:        order.Type,
+			EmployeeID:  order.EmployeeID,
+			Status:      order.Status,
+			TableID:     order.TableID,
+			CreatedAt:   order.CreatedAt,
+			CompletedAt: order.CompletedAt,
+		})
+	}
+
+	return orders, nil
+}

@@ -101,6 +101,44 @@ func (q *Queries) GetOrderItemByID(ctx context.Context, arg GetOrderItemByIDPara
 	return i, err
 }
 
+const getOrders = `-- name: GetOrders :many
+SELECT id, type, employee_id, status, table_id, created_at, completed_at FROM orders
+WHERE status = $1 AND type = $2
+`
+
+type GetOrdersParams struct {
+	Status OrderStatus `db:"status"`
+	Type   OrderType   `db:"type"`
+}
+
+func (q *Queries) GetOrders(ctx context.Context, arg GetOrdersParams) ([]Order, error) {
+	rows, err := q.db.Query(ctx, getOrders, arg.Status, arg.Type)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.EmployeeID,
+			&i.Status,
+			&i.TableID,
+			&i.CreatedAt,
+			&i.CompletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOrderItemStatus = `-- name: UpdateOrderItemStatus :exec
 UPDATE order_items
 SET status = $1

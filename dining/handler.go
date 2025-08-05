@@ -188,3 +188,15 @@ func (h *handler) GetTables() http.HandlerFunc {
 		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", t)
 	}
 }
+
+func (h *handler) GetActiveOrders() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		o, err := h.Service.GetOrders(r.Context(), sqlc.OrderStatusOngoing, sqlc.OrderTypeDining)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval successful", o)
+	}
+}

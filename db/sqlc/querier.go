@@ -19,6 +19,7 @@ type Querier interface {
 	GetMenuItems(ctx context.Context, arg GetMenuItemsParams) ([]MenuItem, error)
 	GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error)
 	GetOrderItemByID(ctx context.Context, arg GetOrderItemByIDParams) (OrderItem, error)
+	GetOrders(ctx context.Context, arg GetOrdersParams) ([]Order, error)
 	GetTableByID(ctx context.Context, id string) (Table, error)
 	GetTables(ctx context.Context, status TableStatus) ([]Table, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
